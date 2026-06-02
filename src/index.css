@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #1A1F35;
+  --bg-surface: #1E2440;
+  --accent-amber: #F5A623;
+  --accent-teal: #00C9A7;
+  --danger: #E84C4C;
+  --text-primary: #FFFFFF;
+  --text-secondary: #B0B8D1;
+  --border: #252B47;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+input, textarea, select, button {
+  font-family: inherit;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+}
+
+.amber-glow {
+  box-shadow: 0 0 0 1px var(--accent-amber), 0 0 24px rgba(245, 166, 35, 0.35);
+}
+
+.dashed-amber {
+  border: 2px dashed var(--accent-amber);
+}
+
+.tooltip-arrow::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--bg-surface);
+}
