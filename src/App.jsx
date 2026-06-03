@@ -18,6 +18,7 @@ function PlaceholderView({ title, hint }) {
 }
 
 export default function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [view, setView] = useState({ name: "dashboard", project: null });
   const [sidebar, setSidebar] = useState("dashboard");
 
@@ -34,9 +35,9 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-bg-primary">
-      <Navbar />
+      <Navbar sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((o) => !o)} />
       <div className="flex flex-1 min-h-0">
-        <Sidebar active={sidebar} onSelect={handleSidebar} />
+        {sidebarOpen && <Sidebar active={sidebar} onSelect={handleSidebar} />}
         <main className="flex-1 overflow-y-auto">
           {view.name === "dashboard" && (
             <Dashboard

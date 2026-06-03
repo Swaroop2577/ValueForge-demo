@@ -1,8 +1,15 @@
-import { Sparkles } from "lucide-react";
+import { Menu, Sparkles, X } from "lucide-react";
 
-export default function Navbar() {
+export default function Navbar({ sidebarOpen, onToggleSidebar }) {
   return (
     <header className="h-14 bg-bg-primary border-b border-border-color flex items-center px-6 gap-4 flex-shrink-0">
+      <button
+        onClick={onToggleSidebar}
+        className="w-9 h-9 rounded-md flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-bg-surface transition-colors"
+        title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+      >
+        {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
+      </button>
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-amber to-accent-teal flex items-center justify-center">
           <Sparkles size={18} color="#1A1F35" strokeWidth={2.5} />
