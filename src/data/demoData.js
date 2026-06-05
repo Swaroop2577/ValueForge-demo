@@ -118,29 +118,66 @@ export const HEATMAP_DATA = {
 };
 
 export const CLAIM_SATURATION = [
-  { claim: "Natural", score: 91, status: "saturated" },
-  { claim: "High-Protein", score: 78, status: "saturated" },
-  { claim: "Plant-Based", score: 62, status: "competitive" },
-  { claim: "Gut Health", score: 48, status: "competitive" },
-  { claim: "Mood Boosting", score: 19, status: "available" },
-  { claim: "Affordable Protein", score: 24, status: "available" },
+  { claim: "Natural", score: 91, status: "saturated", velocity: "declining", velocityDetail: "This claim dropped 23% in usage over the last 6 months across your category." },
+  { claim: "High-Protein", score: 78, status: "saturated", velocity: "plateaued", velocityDetail: "This claim grew only 4% in usage over the last 6 months — market has stabilised." },
+  { claim: "Plant-Based", score: 62, status: "competitive", velocity: "rising-fast", velocityDetail: "This claim grew 41% in usage over the last 6 months across your category." },
+  { claim: "Gut Health", score: 48, status: "competitive", velocity: "plateaued", velocityDetail: "This claim grew only 6% in usage over the last 6 months — market has stabilised." },
+  { claim: "Mood Boosting", score: 19, status: "available", velocity: "early-signal", velocityDetail: "This claim grew 28% in usage over the last 6 months — early but gaining." },
+  { claim: "Affordable Protein", score: 24, status: "available", velocity: "early-signal", velocityDetail: "This claim grew 19% in usage over the last 6 months — early but gaining." },
 ];
 
 export const WHITESPACE_OPPORTUNITIES = [
   {
-    pairing: "Sustainability × Convenience",
-    description:
-      "No brand owns 'quick AND responsible'. Eco claims exist but are tied to slow, ritualistic moments — not the 30-second morning.",
+    zone: "Precision Fermentation × Morning Occasion",
+    type: "virgin",
+    confidence: "high",
+    fit: 81,
+    adjacentClaims: [
+      { claim: "Gut Health", score: 48 },
+      { claim: "Natural", score: 91 },
+    ],
+    ingredient: "Lactobacillus rhamnosus GG at 10 billion CFU *(no competitor has claimed at this strain + dosage specificity)*",
+    format: "Ready-to-drink fermented shot, single-serve, morning commute occasion",
+    claimFramings: [
+      "Built for your gut. Ready in 60s.",
+      "Morning ritual, not morning chore.",
+      "Fermented. Not fortified.",
+    ],
   },
   {
-    pairing: "Protein × Budget-Friendly",
-    description:
-      "Affordable functional protein is open. Current players either charge a premium (Oziva) or under-deliver on protein density (mass brands).",
+    zone: "Affordable Protein × Everyday Ritual",
+    type: "virgin",
+    confidence: "medium",
+    fit: 74,
+    adjacentClaims: [
+      { claim: "High-Protein", score: 78 },
+      { claim: "Plant-Based", score: 62 },
+    ],
+    ingredient: "Whole oat protein isolate, not whey blend *(underused in budget segment, trend-validated in South Asian markets)*",
+    format: "Multipack powder sachet, daily habit format, priced ₹55–65 per serve",
+    claimFramings: [
+      "Protein that doesn't cost a premium.",
+      "Your everyday, not your cheat day.",
+      "Clean fuel. Under ₹60.",
+    ],
   },
   {
-    pairing: "Mood × Routine",
-    description:
-      "Protein is gym-associated, not a daily ritual. The 'morning mood boost' territory is unclaimed by oat-shake competitors.",
+    zone: "Convenience × Sustainability",
+    type: "abandoned",
+    confidence: "speculative",
+    fit: 61,
+    adjacentClaims: [
+      { claim: "Natural", score: 91 },
+      { claim: "Plant-Based", score: 62 },
+    ],
+    ingredient: "Upcycled grain base *(trend-validated, unclaimed in India at scale)*",
+    format: "Compostable on-the-go pouch, grab-and-go retail placement",
+    claimFramings: [
+      "Fast. Clean. Responsible.",
+      "No compromise on planet or schedule.",
+      "Grab it. Don't guilt it.",
+    ],
+    warning: "Two brands attempted 'eco-convenient' positioning in this category in 2022. Neither achieved recall above 12% in target segment.",
   },
 ];
 
@@ -166,6 +203,7 @@ export const STEP4_OUTPUT = {
         "Slots the product into a specific time-of-day routine. Aligns directly with Priya's 'Time-Starved' lifestyle and the open 'mood × routine' whitespace. Differentiation is high because competitors are stuck on gym/premium positioning.",
       stars: 5,
       risk: "low",
+      ownership: { state: "fragmented", player: null, share: 14 },
     },
     {
       rank: 2,
@@ -174,6 +212,7 @@ export const STEP4_OUTPUT = {
         "Hits the budget + transparency gap. Competes on clarity, not aspiration. Lower resonance than #1 because 'clean' is partially saturated, but price + simplicity lands a strong second punch.",
       stars: 4,
       risk: "low",
+      ownership: { state: "contested", player: "Nestlé", share: 42 },
     },
     {
       rank: 3,
@@ -182,6 +221,7 @@ export const STEP4_OUTPUT = {
         "Emotional, self-aware tone. Strong on tone of voice and shares territory with the indulgence gap. Risk is medium because 'taste' is competitive — needs strong creative execution to break through.",
       stars: 3,
       risk: "medium",
+      ownership: { state: "fragmented", player: null, share: 8 },
     },
   ],
   messaging: {

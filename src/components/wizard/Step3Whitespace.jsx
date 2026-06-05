@@ -113,29 +113,59 @@ function Heatmap() {
   );
 }
 
+const VELOCITY_CONFIG = {
+  "rising-fast": { arrow: "↑", label: "Rising Fast", color: "text-accent-amber", tooltipBg: "bg-accent-amber/10 border-accent-amber/30" },
+  "early-signal": { arrow: "↑", label: "Early Signal", color: "text-accent-teal", tooltipBg: "bg-accent-teal/10 border-accent-teal/30" },
+  plateaued: { arrow: "→", label: "Plateaued", color: "text-[#B0B8D1]", tooltipBg: "bg-[#B0B8D1]/10 border-[#B0B8D1]/30" },
+  declining: { arrow: "↓", label: "Declining", color: "text-accent-teal", tooltipBg: "bg-accent-teal/10 border-accent-teal/30" },
+};
+
 function ClaimFlagList() {
+  const [tooltip, setTooltip] = useState(null);
+
   return (
     <div className="space-y-3">
-      {CLAIM_SATURATION.map((c) => (
-        <div key={c.claim} className="bg-bg-primary border border-border-color rounded-md p-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-sm font-medium text-text-primary">{c.claim}</div>
-            <span
-              className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${
-                c.status === "saturated"
-                  ? "border-danger text-danger bg-danger/10"
-                  : c.status === "competitive"
-                  ? "border-accent-amber text-accent-amber bg-accent-amber/10"
-                  : "border-accent-teal text-accent-teal bg-accent-teal/10"
-              }`}
-            >
-              {c.status}
-            </span>
+      {CLAIM_SATURATION.map((c) => {
+        const v = VELOCITY_CONFIG[c.velocity];
+        return (
+          <div key={c.claim} className="bg-bg-primary border border-border-color rounded-md p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-text-primary">{c.claim}</div>
+              <span
+                className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${
+                  c.status === "saturated"
+                    ? "border-danger text-danger bg-danger/10"
+                    : c.status === "competitive"
+                    ? "border-accent-amber text-accent-amber bg-accent-amber/10"
+                    : "border-accent-teal text-accent-teal bg-accent-teal/10"
+                }`}
+              >
+                {c.status}
+              </span>
+            </div>
+            <SaturationBar value={c.score} status={c.status} />
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-xs text-text-secondary font-mono">{c.score} / 100</span>
+              <span
+                className={`relative flex items-center gap-1 text-xs font-semibold cursor-default ${v.color}`}
+                onMouseEnter={(e) => setTooltip({ x: e.clientX, y: e.clientY, text: c.velocityDetail })}
+                onMouseMove={(e) => setTooltip((t) => (t ? { ...t, x: e.clientX, y: e.clientY } : null))}
+                onMouseLeave={() => setTooltip(null)}
+              >
+                {v.arrow} {v.label}
+              </span>
+            </div>
           </div>
-          <SaturationBar value={c.score} status={c.status} />
-          <div className="text-xs text-text-secondary mt-1 font-mono">{c.score} / 100</div>
+        );
+      })}
+      {tooltip && (
+        <div
+          className="fixed z-50 pointer-events-none bg-bg-surface border border-border-color rounded-md px-3 py-2 text-xs shadow-xl"
+          style={{ top: tooltip.y - 50, left: tooltip.x - 140, minWidth: 260 }}
+        >
+          {tooltip.text}
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -182,26 +212,97 @@ function ResonanceList() {
   );
 }
 
-function WhitespaceCallout() {
+const CONFIDENCE_STYLES = {
+  high: { border: "border-accent-teal", badge: "bg-accent-teal/10 text-accent-teal border-accent-teal/30", shadow: "shadow-[0_0_12px_-2px_rgba(16,185,129,0.15)]" },
+  medium: { border: "border-accent-amber", badge: "bg-accent-amber/10 text-accent-amber border-accent-amber/30", shadow: "shadow-[0_0_12px_-2px_rgba(245,158,11,0.15)]" },
+  speculative: { border: "border-[#252B47]", badge: "bg-[#252B47]/10 text-text-secondary border-[#252B47]/30", shadow: "" },
+};
+
+function WhitespaceCards() {
   return (
-    <div className="mt-5 border border-accent-teal/40 bg-accent-teal/5 rounded-lg p-4">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="mt-5">
+      <div className="flex items-center gap-2 mb-4">
         <span className="w-2 h-2 rounded-full bg-accent-teal" />
         <span className="text-xs uppercase tracking-widest text-accent-teal font-semibold">
-          Top 3 Whitespace Opportunities
+          Whitespace Opportunities
         </span>
       </div>
-      <ol className="space-y-2.5">
-        {WHITESPACE_OPPORTUNITIES.map((w, i) => (
-          <li key={w.pairing} className="flex gap-3">
-            <span className="font-mono text-accent-teal font-semibold">{i + 1}.</span>
-            <div>
-              <div className="text-sm text-text-primary font-medium">{w.pairing}</div>
-              <div className="text-xs text-text-secondary mt-0.5">{w.description}</div>
+      <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "thin" }}>
+        {WHITESPACE_OPPORTUNITIES.map((w, i) => {
+          const cs = CONFIDENCE_STYLES[w.confidence];
+          return (
+            <div
+              key={w.zone}
+              className={`flex-shrink-0 w-[360px] bg-bg-surface border rounded-lg p-4 ${cs.border} ${cs.shadow}`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span
+                  className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${
+                    w.type === "virgin"
+                      ? "border-accent-teal text-accent-teal bg-accent-teal/10"
+                      : "border-danger text-danger bg-danger/10"
+                  }`}
+                >
+                  {w.type === "virgin" ? "VIRGIN WHITESPACE" : "ABANDONED WHITESPACE"}
+                </span>
+                <span className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${cs.badge}`}>
+                  {w.confidence === "high" ? "HIGH" : w.confidence === "medium" ? "MEDIUM" : "SPECULATIVE"}
+                </span>
+              </div>
+
+              <h4 className="text-base font-bold text-text-primary mb-3">{w.zone}</h4>
+
+              <div className="mb-3">
+                <p className="text-[10px] uppercase tracking-wider text-text-secondary mb-1.5">Adjacent Saturated Claims</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {w.adjacentClaims.map((ac) => (
+                    <span key={ac.claim} className="text-[10px] font-mono bg-bg-primary border border-border-color rounded px-1.5 py-0.5 text-text-secondary">
+                      {ac.claim} <span className="text-text-primary">{ac.score}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[#B0B8D1] mb-2">Recommended Direction</p>
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-xs text-accent-amber font-semibold">🧪 Ingredient</span>
+                    <p className="text-xs text-text-primary mt-0.5 leading-relaxed">{w.ingredient}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-accent-amber font-semibold">📦 Format</span>
+                    <p className="text-xs text-text-primary mt-0.5 leading-relaxed">{w.format}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-accent-amber font-semibold">💬 Claim Framings</span>
+                    <ol className="space-y-0.5 mt-0.5">
+                      {w.claimFramings.map((cf, j) => (
+                        <li key={j} className="flex gap-2 text-xs text-text-primary">
+                          <span className="text-accent-amber font-mono flex-shrink-0">{j + 1}.</span>
+                          <span>"{cf}"</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-border-color">
+                <span className="text-[10px] uppercase tracking-wider text-text-secondary">Persona-Claim Fit</span>
+                <span className="font-mono text-sm font-semibold text-accent-amber">{w.fit}%</span>
+              </div>
+
+              {w.type === "abandoned" && w.warning && (
+                <div className="mt-3 bg-danger/10 border border-danger/30 rounded-md p-2.5 flex items-start gap-2">
+                  <span className="text-danger flex-shrink-0 text-sm">⚠️</span>
+                  <p className="text-xs text-text-primary leading-relaxed">{w.warning}</p>
+                </div>
+              )}
             </div>
-          </li>
-        ))}
-      </ol>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -229,7 +330,7 @@ export default function Step3Whitespace({ onNext }) {
           </div>
         </div>
         <Heatmap />
-        <WhitespaceCallout />
+        <WhitespaceCards />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[35%_1fr_35%] gap-5 mb-5">

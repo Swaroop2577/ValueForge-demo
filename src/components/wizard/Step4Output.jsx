@@ -15,6 +15,7 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
+  Info,
 } from "lucide-react";
 import ScoreGauge from "../shared/ScoreGauge";
 import { STEP4_OUTPUT } from "../../data/demoData";
@@ -48,7 +49,16 @@ function SubScoreBar({ label, value }) {
   );
 }
 
+const OWNERSHIP_CONFIG = {
+  fragmented: { badge: "bg-accent-teal/10 text-accent-teal border-accent-teal/30", label: "Fragmented", symbol: "✓" },
+  contested: { badge: "bg-accent-amber/10 text-accent-amber border-accent-amber/30", label: "Contested", symbol: "!" },
+  dominated: { badge: "bg-danger/10 text-danger border-danger/30", label: "Dominated", symbol: "✗" },
+};
+
 function VPCard({ vp, expanded, onToggle }) {
+  const [ownershipTooltip, setOwnershipTooltip] = useState(false);
+  const oc = OWNERSHIP_CONFIG[vp.ownership?.state] || null;
+
   return (
     <div
       className={`bg-bg-primary border rounded-lg p-4 transition-all ${
@@ -80,7 +90,7 @@ function VPCard({ vp, expanded, onToggle }) {
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-1.5">
             <span
               className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${
                 vp.risk === "low"
@@ -96,6 +106,32 @@ function VPCard({ vp, expanded, onToggle }) {
               Resonance match
             </span>
           </div>
+
+          {oc && (
+            <div className="flex flex-wrap items-center gap-2 mb-2 relative">
+              <span
+                className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1 cursor-default ${oc.badge}`}
+                onMouseEnter={() => setOwnershipTooltip(true)}
+                onMouseLeave={() => setOwnershipTooltip(false)}
+              >
+                {oc.symbol} {oc.label}
+              </span>
+              <span className="text-xs text-text-secondary">
+                {vp.ownership.state === "fragmented"
+                  ? `Spread across ${vp.ownership.share} brands — no dominant player`
+                  : vp.ownership.state === "contested"
+                  ? `${vp.ownership.player} holds ~${vp.ownership.share}% share of voice`
+                  : `${vp.ownership.player} owns this claim psychologically — very hard to displace`}
+              </span>
+              {ownershipTooltip && (
+                <div className="absolute top-full left-0 mt-1 z-50 bg-bg-surface border border-accent-amber/30 rounded-md px-3 py-2 text-xs shadow-xl pointer-events-none" style={{ minWidth: 280 }}>
+                  Dominant Ownership Index measures whether a claim is statistically frequent or psychologically owned by one brand. These are not the same thing.
+                  <div className="absolute -top-1 left-4 w-2 h-2 bg-bg-surface border-l border-t border-accent-amber/30 rotate-45" />
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             onClick={onToggle}
             className="text-xs text-accent-amber flex items-center gap-1 hover:underline"

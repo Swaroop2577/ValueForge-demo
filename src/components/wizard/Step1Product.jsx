@@ -1,7 +1,13 @@
 import { useState } from "react";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, Plus, X, Pencil } from "lucide-react";
 import Chip from "../shared/Chip";
 import { CATEGORIES, MARKETS, CONSUMER_NEEDS } from "../../data/demoData";
+
+const DEMO_COMPETITORS = [
+  { name: "Slurrp Farm", category: "Functional Beverages", claims: ["Natural", "No added sugar", "Kid-friendly"], marketPosition: "Niche Player" },
+  { name: "Yoga Bar", category: "Functional Beverages / Snacks", claims: ["High-protein", "Clean ingredients", "Plant-based"], marketPosition: "Challenger" },
+  { name: "Ensure (Abbott)", category: "Functional Nutrition Drinks", claims: ["Complete nutrition", "Clinically proven", "High-protein"], marketPosition: "Category Leader" },
+];
 
 function Field({ label, children, hint }) {
   return (
@@ -18,7 +24,96 @@ function Field({ label, children, hint }) {
 const inputCls =
   "w-full bg-bg-primary border border-border-color rounded-md px-3 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/60 focus:border-accent-amber transition-colors";
 
-const NUM_COMPETITORS = 3;
+function CompetitorCard({ comp, editable, onUpdate }) {
+  const [localName, setLocalName] = useState(comp.name);
+  const [localClaims, setLocalClaims] = useState(comp.claims.join(", "));
+
+  if (editable) {
+    return (
+      <div className="bg-bg-surface border border-border rounded-lg p-3 flex flex-col gap-2">
+        <input
+          className="w-full bg-bg-primary border border-border rounded px-2 py-1.5 text-sm text-text-primary placeholder:text-text-secondary/60 focus:border-accent-amber transition-colors"
+          value={localName}
+          onChange={(e) => setLocalName(e.target.value)}
+          placeholder="Brand name"
+        />
+        <input
+          className="w-full bg-bg-primary border border-border rounded px-2 py-1.5 text-sm text-text-primary placeholder:text-text-secondary/60 focus:border-accent-amber transition-colors"
+          value={localClaims}
+          onChange={(e) => setLocalClaims(e.target.value)}
+          placeholder="Claims (comma-separated)"
+        />
+        <select
+          className="w-full bg-bg-primary border border-border rounded px-2 py-1.5 text-sm text-text-primary focus:border-accent-amber transition-colors"
+          value={comp.marketPosition}
+          onChange={(e) => onUpdate({ ...comp, marketPosition: e.target.value })}
+        >
+          <option value="Category Leader" className="bg-bg-primary">Category Leader</option>
+          <option value="Challenger" className="bg-bg-primary">Challenger</option>
+          <option value="Niche Player" className="bg-bg-primary">Niche Player</option>
+        </select>
+        <button
+          type="button"
+          onClick={() => onUpdate({ name: localName, category: comp.category, claims: localClaims.split(",").map((c) => c.trim()).filter(Boolean), marketPosition: comp.marketPosition })}
+          className="text-xs text-accent-amber hover:underline self-end"
+        >
+          Done
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-bg-surface border border-border rounded-lg p-3">
+      <div className="text-sm font-semibold text-text-primary mb-0.5">{comp.name}</div>
+      <div className="text-[10px] font-mono text-text-secondary mb-2">{comp.category}</div>
+      <div className="mb-2">
+        <div className="text-[10px] uppercase tracking-wider text-text-secondary mb-1">Key Claims</div>
+        <div className="flex flex-wrap gap-1">
+          {comp.claims.map((cl) => (
+            <span key={cl} className="text-[10px] px-1.5 py-0.5 rounded bg-accent-amber/10 text-accent-amber border border-accent-amber/20">{cl}</span>
+          ))}
+        </div>
+      </div>
+      <div className="text-[10px] font-mono text-text-secondary">{comp.marketPosition}</div>
+    </div>
+  );
+}
+
+function CompetitorsBlock({ detected, onUpdateDetected }) {
+  const [editing, setEditing] = useState(false);
+  const [competitors, setCompetitors] = useState(detected?.length ? detected : DEMO_COMPETITORS);
+
+  const updateCompetitor = (i, comp) => {
+    const next = [...competitors];
+    next[i] = comp;
+    setCompetitors(next);
+    onUpdateDetected(next);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <span className="text-[10px] font-mono uppercase tracking-wider text-[#B0B8D1]">🔍 Competitors Detected from Your Concept</span>
+          <span className="ml-2 text-[10px] font-mono text-accent-teal">Auto-generated based on category + concept description</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditing(!editing)}
+          className="text-[10px] font-mono text-text-secondary hover:text-accent-amber transition-colors flex items-center gap-1"
+        >
+          {editing ? "Done Editing" : <><Pencil size={10} /> Edit</>}
+        </button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {competitors.map((comp, i) => (
+          <CompetitorCard key={i} comp={comp} editable={editing} onUpdate={(c) => updateCompetitor(i, c)} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Step1Product({ data, setData, onNext }) {
   const [loading, setLoading] = useState(false);
@@ -39,10 +134,7 @@ export default function Step1Product({ data, setData, onNext }) {
     update({ consumer_needs: next });
   };
 
-  const updateCompetitor = (i, patch) => {
-    const next = data.competitors.map((c, idx) => (idx === i ? { ...c, ...patch } : c));
-    update({ competitors: next });
-  };
+  const updateDetected = (competitors) => update({ detected_competitors: competitors });
 
   const handleSubmit = (e) => {
     e?.preventDefault?.();
@@ -125,27 +217,10 @@ export default function Step1Product({ data, setData, onNext }) {
           </div>
         </Field>
 
-        <div>
-          <div className="text-sm font-medium text-text-primary mb-2">Top 3 Competitors</div>
-          <div className="space-y-3">
-            {Array.from({ length: NUM_COMPETITORS }).map((_, i) => (
-              <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input
-                  className={inputCls}
-                  placeholder={`Competitor ${i + 1} name`}
-                  value={data.competitors[i]?.name || ""}
-                  onChange={(e) => updateCompetitor(i, { name: e.target.value })}
-                />
-                <input
-                  className={inputCls}
-                  placeholder="Their key claims (comma-separated)"
-                  value={data.competitors[i]?.claims || ""}
-                  onChange={(e) => updateCompetitor(i, { claims: e.target.value })}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+        <CompetitorsBlock
+          detected={data.detected_competitors}
+          onUpdateDetected={updateDetected}
+        />
 
         <button
           type="submit"
