@@ -21,11 +21,13 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [view, setView] = useState({ name: "dashboard", project: null });
   const [sidebar, setSidebar] = useState("dashboard");
+  const [navProductName, setNavProductName] = useState("");
 
   const handleSidebar = (id) => {
     setSidebar(id);
     if (id === "dashboard" || id === "projects") {
       setView({ name: "dashboard", project: null });
+      setNavProductName("");
     } else if (id === "new") {
       setView({ name: "wizard", project: null });
     } else {
@@ -35,7 +37,7 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-bg-primary">
-      <Navbar sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((o) => !o)} />
+      <Navbar sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((o) => !o)} productName={navProductName} />
       <div className="flex flex-1 min-h-0">
         {sidebarOpen && <Sidebar active={sidebar} onSelect={handleSidebar} />}
         <main className="flex-1 overflow-y-auto">
@@ -54,9 +56,11 @@ export default function App() {
           {view.name === "wizard" && (
             <Wizard
               initialProject={view.project}
+              onProductNameChange={setNavProductName}
               onExit={() => {
                 setSidebar("dashboard");
                 setView({ name: "dashboard", project: null });
+                setNavProductName("");
               }}
             />
           )}

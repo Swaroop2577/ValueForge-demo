@@ -10,6 +10,8 @@ export const CATEGORIES = [
 
 export const MARKETS = ["India", "USA", "UK", "SEA", "Global"];
 
+export const PREDEFINED_CLAIMS = ["High-protein", "Natural", "Plant-based", "Gut-friendly", "No added sugar", "Organic", "Gluten-free", "Vegan", "Keto-friendly", "Low-calorie"];
+
 export const CONSUMER_NEEDS = [
   "Gut Health",
   "Weight Management",
@@ -132,6 +134,7 @@ export const WHITESPACE_OPPORTUNITIES = [
     type: "virgin",
     confidence: "high",
     fit: 81,
+    fitByPersona: [81, 58, 74, 79],
     adjacentClaims: [
       { claim: "Gut Health", score: 48 },
       { claim: "Natural", score: 91 },
@@ -149,6 +152,7 @@ export const WHITESPACE_OPPORTUNITIES = [
     type: "virgin",
     confidence: "medium",
     fit: 74,
+    fitByPersona: [74, 86, 49, 61],
     adjacentClaims: [
       { claim: "High-Protein", score: 78 },
       { claim: "Plant-Based", score: 62 },
@@ -166,6 +170,7 @@ export const WHITESPACE_OPPORTUNITIES = [
     type: "abandoned",
     confidence: "speculative",
     fit: 61,
+    fitByPersona: [61, 55, 83, 57],
     adjacentClaims: [
       { claim: "Natural", score: 91 },
       { claim: "Plant-Based", score: 62 },
@@ -189,6 +194,29 @@ export const RESONANCE_PREDICTIONS = [
   { positioning: "Performance protein", score: 48, risk: "high" },
   { positioning: "Indulgent dessert shake", score: 35, risk: "high" },
 ];
+
+export const RESONANCE_BY_PERSONA = {
+  persona_1: [
+    { rank: 1, positioning: "Protein that fits your 20-minute morning", score: 87, risk: "low" },
+    { rank: 2, positioning: "Clean fuel. Real ingredients. Under ₹60.", score: 74, risk: "low" },
+    { rank: 3, positioning: "The oat shake that tastes like you didn't have to try.", score: 68, risk: "medium" },
+  ],
+  persona_2: [
+    { rank: 1, positioning: "Clean fuel. Real ingredients. Under ₹60.", score: 82, risk: "low" },
+    { rank: 2, positioning: "The family protein. No compromise on taste.", score: 71, risk: "low" },
+    { rank: 3, positioning: "Protein that fits your 20-minute morning.", score: 58, risk: "medium" },
+  ],
+  persona_3: [
+    { rank: 1, positioning: "Fermented. Not fortified.", score: 79, risk: "low" },
+    { rank: 2, positioning: "Sustainably sourced. Locally made.", score: 76, risk: "low" },
+    { rank: 3, positioning: "Clean fuel. Real ingredients. Under ₹60.", score: 51, risk: "high" },
+  ],
+  persona_4: [
+    { rank: 1, positioning: "Built for your gut. Ready in 60s.", score: 84, risk: "low" },
+    { rank: 2, positioning: "Protein that fits your 20-minute morning.", score: 77, risk: "low" },
+    { rank: 3, positioning: "Fermented. Not fortified.", score: 63, risk: "medium" },
+  ],
+};
 
 export const STEP4_OUTPUT = {
   differentiation_score: 68,

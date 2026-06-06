@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { HEATMAP_DATA, CLAIM_SATURATION, WHITESPACE_OPPORTUNITIES, RESONANCE_PREDICTIONS } from "../../data/demoData";
+import { HEATMAP_DATA, CLAIM_SATURATION, WHITESPACE_OPPORTUNITIES, RESONANCE_BY_PERSONA } from "../../data/demoData";
 import SaturationBar from "../shared/SaturationBar";
 
 function cellColor(v) {
@@ -65,7 +65,7 @@ function Heatmap() {
                         }
                         onMouseLeave={() => setHover(null)}
                       >
-                        {v > 0 ? v : "—"}
+                        {v > 0 ? v : "\u2014"}
                       </div>
                     </td>
                   );
@@ -86,7 +86,7 @@ function Heatmap() {
           }}
         >
           <div className="font-semibold text-text-primary mb-0.5">
-            {hover.row} <span className="text-text-secondary font-normal">· {hover.col}</span>
+            {hover.row} <span className="text-text-secondary font-normal">&middot; {hover.col}</span>
           </div>
           <div className="text-text-secondary">
             {hover.v} brands claim this
@@ -100,10 +100,10 @@ function Heatmap() {
           <span className="w-3 h-3 rounded bg-danger" /> Saturated (75+)
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-accent-amber" /> Competitive (40–74)
+          <span className="w-3 h-3 rounded bg-accent-amber" /> Competitive ({'40\u201374'})
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded border-2 border-accent-teal" /> Minimal (1–39)
+          <span className="w-3 h-3 rounded border-2 border-accent-teal" /> Minimal ({'1\u201339'})
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-border-color" /> Whitespace (0)
@@ -114,18 +114,34 @@ function Heatmap() {
 }
 
 const VELOCITY_CONFIG = {
-  "rising-fast": { arrow: "↑", label: "Rising Fast", color: "text-accent-amber", tooltipBg: "bg-accent-amber/10 border-accent-amber/30" },
-  "early-signal": { arrow: "↑", label: "Early Signal", color: "text-accent-teal", tooltipBg: "bg-accent-teal/10 border-accent-teal/30" },
-  plateaued: { arrow: "→", label: "Plateaued", color: "text-[#B0B8D1]", tooltipBg: "bg-[#B0B8D1]/10 border-[#B0B8D1]/30" },
-  declining: { arrow: "↓", label: "Declining", color: "text-accent-teal", tooltipBg: "bg-accent-teal/10 border-accent-teal/30" },
+  "rising-fast": { arrow: "\u2191", label: "Rising Fast", color: "text-accent-amber", tooltipBg: "bg-accent-amber/10 border-accent-amber/30" },
+  "early-signal": { arrow: "\u2191", label: "Early Signal", color: "text-accent-teal", tooltipBg: "bg-accent-teal/10 border-accent-teal/30" },
+  plateaued: { arrow: "\u2192", label: "Plateaued", color: "text-[#B0B8D1]", tooltipBg: "bg-[#B0B8D1]/10 border-[#B0B8D1]/30" },
+  declining: { arrow: "\u2193", label: "Declining", color: "text-accent-teal", tooltipBg: "bg-accent-teal/10 border-accent-teal/30" },
 };
 
-function ClaimFlagList() {
+const CLAIM_SCORE_MAP = {
+  "Natural": { score: 91, status: "saturated", velocity: "declining", velocityDetail: "This claim dropped 23% in usage over the last 6 months across your category." },
+  "High-protein": { score: 78, status: "saturated", velocity: "plateaued", velocityDetail: "This claim grew only 4% in usage over the last 6 months \u2014 market has stabilised." },
+  "Plant-based": { score: 62, status: "competitive", velocity: "rising-fast", velocityDetail: "This claim grew 41% in usage over the last 6 months across your category." },
+  "Gut health": { score: 48, status: "competitive", velocity: "plateaued", velocityDetail: "This claim grew only 6% in usage over the last 6 months \u2014 market has stabilised." },
+  "Mood boosting": { score: 19, status: "available", velocity: "early-signal", velocityDetail: "This claim grew 28% in usage over the last 6 months \u2014 early but gaining." },
+  "default": { score: 35, status: "available", velocity: "early-signal", velocityDetail: "Emerging claim with growing traction \u2014 low saturation makes this a differentiation opportunity." },
+};
+
+function ClaimFlagList({ keyClaims }) {
   const [tooltip, setTooltip] = useState(null);
+
+  const claims = keyClaims?.length > 0
+    ? keyClaims.map((claim) => {
+        const mapped = CLAIM_SCORE_MAP[claim] || CLAIM_SCORE_MAP["default"];
+        return { claim, ...mapped };
+      })
+    : CLAIM_SATURATION;
 
   return (
     <div className="space-y-3">
-      {CLAIM_SATURATION.map((c) => {
+      {claims.map((c) => {
         const v = VELOCITY_CONFIG[c.velocity];
         return (
           <div key={c.claim} className="bg-bg-primary border border-border-color rounded-md p-3">
@@ -170,10 +186,44 @@ function ClaimFlagList() {
   );
 }
 
-function ResonanceList() {
+function TabBar({ personas, activeId, onSelect }) {
+  if (personas.length <= 1) return null;
+  return (
+    <div className="flex items-center gap-1.5 mb-3" style={{ scrollbarWidth: "thin" }}>
+      {personas.map((p) => {
+        const name = p.persona_name || `Persona ${personas.indexOf(p) + 1}`;
+        const isActive = p.id === activeId;
+        return (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => onSelect(p.id)}
+            className={`px-3 py-1 text-[11px] rounded-md font-medium transition-all ${
+              isActive
+                ? "bg-bg-primary text-text-primary border-b-2 border-accent-amber rounded-b-none"
+                : "bg-[#252B47] text-text-secondary/60 hover:text-text-primary"
+            }`}
+          >
+            {name}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ResonanceList({ personas, activeResonanceId, onResonanceTab }) {
+  const resonanceData = RESONANCE_BY_PERSONA[activeResonanceId] || RESONANCE_BY_PERSONA["persona_1"];
+  const activePersona = personas.find((p) => p.id === activeResonanceId) || personas[0];
+  const personaName = activePersona?.persona_name || `Persona ${personas.indexOf(activePersona) + 1}`;
+
   return (
     <div className="space-y-2.5">
-      {RESONANCE_PREDICTIONS.map((r) => {
+      {personas.length > 1 && (
+        <TabBar personas={personas} activeId={activeResonanceId} onSelect={onResonanceTab} />
+      )}
+      <div className="text-xs text-text-secondary mb-2">For <span className="text-text-primary font-semibold">{personaName}</span> {'\u2014'} Predicted Resonance</div>
+      {resonanceData.map((r) => {
         const color =
           r.risk === "low" ? "var(--accent-teal)" : r.risk === "medium" ? "var(--accent-amber)" : "var(--danger)";
         return (
@@ -218,7 +268,9 @@ const CONFIDENCE_STYLES = {
   speculative: { border: "border-[#252B47]", badge: "bg-[#252B47]/10 text-text-secondary border-[#252B47]/30", shadow: "" },
 };
 
-function WhitespaceCards() {
+function WhitespaceCards({ personas }) {
+  const getPersonaName = (p, idx) => p.persona_name || `Persona ${idx + 1}`;
+
   return (
     <div className="mt-5">
       <div className="flex items-center gap-2 mb-4">
@@ -230,6 +282,7 @@ function WhitespaceCards() {
       <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "thin" }}>
         {WHITESPACE_OPPORTUNITIES.map((w, i) => {
           const cs = CONFIDENCE_STYLES[w.confidence];
+          const fits = w.fitByPersona || personas.map(() => w.fit);
           return (
             <div
               key={w.zone}
@@ -267,20 +320,20 @@ function WhitespaceCards() {
                 <p className="text-[10px] font-mono uppercase tracking-wider text-[#B0B8D1] mb-2">Recommended Direction</p>
                 <div className="space-y-2">
                   <div>
-                    <span className="text-xs text-accent-amber font-semibold">🧪 Ingredient</span>
+                    <span className="text-xs text-accent-amber font-semibold">Ingredient</span>
                     <p className="text-xs text-text-primary mt-0.5 leading-relaxed">{w.ingredient}</p>
                   </div>
                   <div>
-                    <span className="text-xs text-accent-amber font-semibold">📦 Format</span>
+                    <span className="text-xs text-accent-amber font-semibold">Format</span>
                     <p className="text-xs text-text-primary mt-0.5 leading-relaxed">{w.format}</p>
                   </div>
                   <div>
-                    <span className="text-xs text-accent-amber font-semibold">💬 Claim Framings</span>
+                    <span className="text-xs text-accent-amber font-semibold">Claim Framings</span>
                     <ol className="space-y-0.5 mt-0.5">
                       {w.claimFramings.map((cf, j) => (
                         <li key={j} className="flex gap-2 text-xs text-text-primary">
                           <span className="text-accent-amber font-mono flex-shrink-0">{j + 1}.</span>
-                          <span>"{cf}"</span>
+                          <span>{'\u201C'}{cf}{'\u201D'}</span>
                         </li>
                       ))}
                     </ol>
@@ -288,14 +341,26 @@ function WhitespaceCards() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-2 border-t border-border-color">
+              <div className="pt-2 border-t border-border-color space-y-1">
                 <span className="text-[10px] uppercase tracking-wider text-text-secondary">Persona-Claim Fit</span>
-                <span className="font-mono text-sm font-semibold text-accent-amber">{w.fit}%</span>
+                {personas.map((p, idx) => {
+                  const pName = getPersonaName(p, idx);
+                  const fitVal = fits[idx] || w.fit;
+                  return (
+                    <div key={p.id} className="flex items-center gap-2">
+                      <span className="text-xs text-text-secondary w-24 truncate">{pName}</span>
+                      <div className="flex-1 h-2 rounded-full bg-border-color overflow-hidden">
+                        <div className="h-full rounded-full bg-accent-amber" style={{ width: `${fitVal}%` }} />
+                      </div>
+                      <span className="font-mono text-xs font-semibold text-accent-amber w-8 text-right">{fitVal}%</span>
+                    </div>
+                  );
+                })}
               </div>
 
               {w.type === "abandoned" && w.warning && (
                 <div className="mt-3 bg-danger/10 border border-danger/30 rounded-md p-2.5 flex items-start gap-2">
-                  <span className="text-danger flex-shrink-0 text-sm">⚠️</span>
+                  <span className="text-danger flex-shrink-0 text-sm">&#9888;&#65039;</span>
                   <p className="text-xs text-text-primary leading-relaxed">{w.warning}</p>
                 </div>
               )}
@@ -307,7 +372,11 @@ function WhitespaceCards() {
   );
 }
 
-export default function Step3Whitespace({ onNext }) {
+export default function Step3Whitespace({ onNext, keyClaims = [], personas = [] }) {
+  const [activeResonanceId, setActiveResonanceId] = useState(
+    personas.length > 0 ? personas[0].id : "persona_1"
+  );
+
   return (
     <div className="animate-slide-right">
       <div className="mb-6">
@@ -330,7 +399,7 @@ export default function Step3Whitespace({ onNext }) {
           </div>
         </div>
         <Heatmap />
-        <WhitespaceCards />
+        <WhitespaceCards personas={personas} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[35%_1fr_35%] gap-5 mb-5">
@@ -339,7 +408,7 @@ export default function Step3Whitespace({ onNext }) {
             Panel B
           </div>
           <h3 className="text-lg font-semibold text-text-primary mb-4">Claim Overuse Flags</h3>
-          <ClaimFlagList />
+          <ClaimFlagList keyClaims={keyClaims} />
         </div>
 
         <div className="bg-bg-surface border border-border-color rounded-xl p-5 lg:col-span-2">
@@ -349,7 +418,11 @@ export default function Step3Whitespace({ onNext }) {
           <h3 className="text-lg font-semibold text-text-primary mb-4">
             Consumer Resonance Predictor
           </h3>
-          <ResonanceList />
+          <ResonanceList
+            personas={personas}
+            activeResonanceId={activeResonanceId}
+            onResonanceTab={setActiveResonanceId}
+          />
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import { Menu, Sparkles, X } from "lucide-react";
 
-export default function Navbar({ sidebarOpen, onToggleSidebar }) {
+export default function Navbar({ sidebarOpen, onToggleSidebar, productName }) {
   return (
     <header className="h-14 bg-bg-primary border-b border-border-color flex items-center px-6 gap-4 flex-shrink-0">
       <button
@@ -20,6 +20,12 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }) {
       </div>
       <span className="text-text-secondary">/</span>
       <span className="text-text-primary font-medium">ValueForge</span>
+      {productName && (
+        <>
+          <span className="text-text-secondary">/</span>
+          <span className="text-accent-amber font-medium text-sm truncate max-w-[200px]">{productName}</span>
+        </>
+      )}
       <div className="ml-auto flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-bg-surface border border-border-color flex items-center justify-center text-xs font-mono font-semibold text-accent-amber">
           BM

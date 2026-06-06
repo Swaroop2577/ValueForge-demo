@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ArrowRight, Loader2, Plus, X, Pencil } from "lucide-react";
 import Chip from "../shared/Chip";
-import { CATEGORIES, MARKETS, CONSUMER_NEEDS } from "../../data/demoData";
+import { CATEGORIES, MARKETS, CONSUMER_NEEDS, PREDEFINED_CLAIMS } from "../../data/demoData";
 
 const DEMO_COMPETITORS = [
   { name: "Slurrp Farm", category: "Functional Beverages", claims: ["Natural", "No added sugar", "Kid-friendly"], marketPosition: "Niche Player" },
@@ -80,9 +80,22 @@ function CompetitorCard({ comp, editable, onUpdate }) {
   );
 }
 
-function CompetitorsBlock({ detected, onUpdateDetected }) {
+function CompetitorsBlock({ detected, onUpdateDetected, conceptDescription }) {
   const [editing, setEditing] = useState(false);
   const [competitors, setCompetitors] = useState(detected?.length ? detected : DEMO_COMPETITORS);
+  const [visible, setVisible] = useState(detected?.length > 0 || conceptDescription?.length > 10);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (detected?.length > 0) { setVisible(true); return; }
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (conceptDescription?.length > 3) {
+      timerRef.current = setTimeout(() => setVisible(true), 500);
+    } else {
+      setVisible(false);
+    }
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [conceptDescription, detected]);
 
   const updateCompetitor = (i, comp) => {
     const next = [...competitors];
@@ -106,7 +119,10 @@ function CompetitorsBlock({ detected, onUpdateDetected }) {
           {editing ? "Done Editing" : <><Pencil size={10} /> Edit</>}
         </button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div
+        className="grid grid-cols-1 md:grid-cols-3 gap-3 transition-all duration-300"
+        style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(-8px)" }}
+      >
         {competitors.map((comp, i) => (
           <CompetitorCard key={i} comp={comp} editable={editing} onUpdate={(c) => updateCompetitor(i, c)} />
         ))}
@@ -210,28 +226,37 @@ export default function Step1Product({ data, setData, onNext }) {
         </Field>
 
         <Field label="Key Claims">
-          <div className="flex flex-wrap gap-1.5 pt-1 mb-2">
-            {(data.key_claims || []).map((cl, i) => (
-              <span key={i} className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-accent-amber/10 text-accent-amber border border-accent-amber/20">
-                {cl}
-                <button type="button" onClick={() => update({ key_claims: data.key_claims.filter((_, j) => j !== i) })} className="hover:text-danger transition-colors">
+          <div className="flex flex-wrap gap-2 pt-1">
+            {PREDEFINED_CLAIMS.map((cl) => (
+              <Chip key={cl} label={cl} size="sm" active={(data.key_claims || []).includes(cl)} onClick={() => {
+                const arr = data.key_claims || [];
+                update({ key_claims: arr.includes(cl) ? arr.filter((x) => x !== cl) : [...arr, cl] });
+              }} />
+            ))}
+            {(data._custom_claims || []).map((cc) => (
+              <span key={cc} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border bg-accent-amber/10 text-accent-amber border-accent-amber/20 cursor-pointer transition-all hover:bg-accent-amber/20" onClick={() => {
+                const arr = data.key_claims || [];
+                update({ key_claims: arr.includes(cc) ? arr.filter((x) => x !== cc) : [...arr, cc] });
+              }}>
+                {cc}
+                <button type="button" onClick={(e) => { e.stopPropagation(); update({ key_claims: (data.key_claims || []).filter((x) => x !== cc), _custom_claims: (data._custom_claims || []).filter((x) => x !== cc) }); }} className="hover:text-danger transition-colors">
                   <X size={12} />
                 </button>
               </span>
             ))}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 mt-2">
             <input
-              className={inputCls + " flex-1"}
-              placeholder="e.g. High-protein, Plant-based, Gut-friendly"
+              className={inputCls + " flex-1 text-xs"}
+              placeholder="+ Add custom claim..."
               value={data._claimInput || ""}
               onChange={(e) => update({ _claimInput: e.target.value })}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
                   const val = data._claimInput?.trim();
-                  if (val) {
-                    update({ key_claims: [...(data.key_claims || []), val], _claimInput: "" });
+                  if (val && !PREDEFINED_CLAIMS.includes(val) && !(data._custom_claims || []).includes(val)) {
+                    update({ key_claims: [...(data.key_claims || []), val], _custom_claims: [...(data._custom_claims || []), val], _claimInput: "" });
                   }
                 }
               }}
@@ -240,17 +265,17 @@ export default function Step1Product({ data, setData, onNext }) {
               type="button"
               onClick={() => {
                 const val = data._claimInput?.trim();
-                if (val) {
-                  update({ key_claims: [...(data.key_claims || []), val], _claimInput: "" });
+                if (val && !PREDEFINED_CLAIMS.includes(val) && !(data._custom_claims || []).includes(val)) {
+                  update({ key_claims: [...(data.key_claims || []), val], _custom_claims: [...(data._custom_claims || []), val], _claimInput: "" });
                 }
               }}
-              className="bg-accent-amber text-bg-primary px-3 rounded-md hover:opacity-90 transition-opacity flex items-center"
+              className="text-xs text-accent-amber border border-accent-amber/30 px-3 rounded-md hover:bg-accent-amber/5 transition-colors whitespace-nowrap"
             >
-              <Plus size={16} />
+              + Add
             </button>
           </div>
           {(!data.key_claims || data.key_claims.length === 0) && (
-            <p className="text-[10px] text-text-secondary mt-1.5">Add the claims your product will use — these will be checked for saturation in Step 3.</p>
+            <p className="text-[10px] text-text-secondary mt-1.5">Click claims above to select, or add a custom one. Selected claims will be checked for saturation in Step 3.</p>
           )}
         </Field>
 
@@ -260,9 +285,9 @@ export default function Step1Product({ data, setData, onNext }) {
               <Chip key={n} label={n} active={data.consumer_needs.includes(n)} onClick={() => toggleNeed(n)} />
             ))}
             {(data._custom_needs || []).map((cn) => (
-              <span key={cn} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full bg-accent-amber/10 text-accent-amber border border-accent-amber/20">
-                {cn}
-                <button type="button" onClick={() => update({ _custom_needs: data._custom_needs.filter((x) => x !== cn), consumer_needs: data.consumer_needs.filter((x) => x !== cn) })} className="hover:text-danger transition-colors">
+              <span key={cn} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border bg-accent-amber/10 text-accent-amber border-accent-amber/20 cursor-pointer transition-all hover:bg-accent-amber/20" onClick={() => toggleNeed(cn)}>
+                <span className={data.consumer_needs.includes(cn) ? "" : "opacity-70"}>{cn}</span>
+                <button type="button" onClick={(e) => { e.stopPropagation(); update({ consumer_needs: data.consumer_needs.filter((x) => x !== cn), _custom_needs: (data._custom_needs || []).filter((x) => x !== cn) }); }} className="hover:text-danger transition-colors">
                   <X size={12} />
                 </button>
               </span>
@@ -310,6 +335,7 @@ export default function Step1Product({ data, setData, onNext }) {
         <CompetitorsBlock
           detected={data.detected_competitors}
           onUpdateDetected={updateDetected}
+          conceptDescription={data.concept_description}
         />
 
         <button
