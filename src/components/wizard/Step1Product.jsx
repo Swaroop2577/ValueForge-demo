@@ -209,11 +209,101 @@ export default function Step1Product({ data, setData, onNext }) {
           />
         </Field>
 
+        <Field label="Key Claims">
+          <div className="flex flex-wrap gap-1.5 pt-1 mb-2">
+            {(data.key_claims || []).map((cl, i) => (
+              <span key={i} className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-accent-amber/10 text-accent-amber border border-accent-amber/20">
+                {cl}
+                <button type="button" onClick={() => update({ key_claims: data.key_claims.filter((_, j) => j !== i) })} className="hover:text-danger transition-colors">
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              className={inputCls + " flex-1"}
+              placeholder="e.g. High-protein, Plant-based, Gut-friendly"
+              value={data._claimInput || ""}
+              onChange={(e) => update({ _claimInput: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const val = data._claimInput?.trim();
+                  if (val) {
+                    update({ key_claims: [...(data.key_claims || []), val], _claimInput: "" });
+                  }
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const val = data._claimInput?.trim();
+                if (val) {
+                  update({ key_claims: [...(data.key_claims || []), val], _claimInput: "" });
+                }
+              }}
+              className="bg-accent-amber text-bg-primary px-3 rounded-md hover:opacity-90 transition-opacity flex items-center"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+          {(!data.key_claims || data.key_claims.length === 0) && (
+            <p className="text-[10px] text-text-secondary mt-1.5">Add the claims your product will use — these will be checked for saturation in Step 3.</p>
+          )}
+        </Field>
+
         <Field label="Consumer Need">
           <div className="flex flex-wrap gap-2 pt-1">
             {CONSUMER_NEEDS.map((n) => (
               <Chip key={n} label={n} active={data.consumer_needs.includes(n)} onClick={() => toggleNeed(n)} />
             ))}
+            {(data._custom_needs || []).map((cn) => (
+              <span key={cn} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full bg-accent-amber/10 text-accent-amber border border-accent-amber/20">
+                {cn}
+                <button type="button" onClick={() => update({ _custom_needs: data._custom_needs.filter((x) => x !== cn), consumer_needs: data.consumer_needs.filter((x) => x !== cn) })} className="hover:text-danger transition-colors">
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2 mt-2">
+            <input
+              className={inputCls + " flex-1 text-xs"}
+              placeholder="+ Add custom need..."
+              value={data._needInput || ""}
+              onChange={(e) => update({ _needInput: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const val = data._needInput?.trim();
+                  if (val && !CONSUMER_NEEDS.includes(val) && !(data._custom_needs || []).includes(val)) {
+                    update({
+                      consumer_needs: [...data.consumer_needs, val],
+                      _custom_needs: [...(data._custom_needs || []), val],
+                      _needInput: "",
+                    });
+                  }
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const val = data._needInput?.trim();
+                if (val && !CONSUMER_NEEDS.includes(val) && !(data._custom_needs || []).includes(val)) {
+                  update({
+                    consumer_needs: [...data.consumer_needs, val],
+                    _custom_needs: [...(data._custom_needs || []), val],
+                    _needInput: "",
+                  });
+                }
+              }}
+              className="text-xs text-accent-amber border border-accent-amber/30 px-3 rounded-md hover:bg-accent-amber/5 transition-colors whitespace-nowrap"
+            >
+              + Add
+            </button>
           </div>
         </Field>
 
