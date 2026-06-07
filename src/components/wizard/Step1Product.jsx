@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ArrowRight, Loader2, Plus, X, Pencil } from "lucide-react";
 import Chip from "../shared/Chip";
-import { CATEGORIES, MARKETS, CONSUMER_NEEDS, PREDEFINED_CLAIMS } from "../../data/demoData";
+import { CATEGORIES, MARKETS, PREDEFINED_CLAIMS } from "../../data/demoData";
 
 const DEMO_COMPETITORS = [
   { name: "Slurrp Farm", category: "Functional Beverages", claims: ["Natural", "No added sugar", "Kid-friendly"], marketPosition: "Niche Player" },
@@ -26,7 +26,7 @@ const inputCls =
 
 function CompetitorCard({ comp, editable, onUpdate }) {
   const [localName, setLocalName] = useState(comp.name);
-  const [localClaims, setLocalClaims] = useState(comp.claims.join(", "));
+  const [localClaims, setLocalClaims] = useState(Array.isArray(comp.claims) ? comp.claims.join(", ") : (comp.claims || ""));
 
   if (editable) {
     return (
@@ -70,7 +70,7 @@ function CompetitorCard({ comp, editable, onUpdate }) {
       <div className="mb-2">
         <div className="text-[10px] uppercase tracking-wider text-text-secondary mb-1">Key Claims</div>
         <div className="flex flex-wrap gap-1">
-          {comp.claims.map((cl) => (
+          {(Array.isArray(comp.claims) ? comp.claims : (comp.claims || "").split(",").map(c => c.trim()).filter(Boolean)).map((cl) => (
             <span key={cl} className="text-[10px] px-1.5 py-0.5 rounded bg-accent-amber/10 text-accent-amber border border-accent-amber/20">{cl}</span>
           ))}
         </div>
@@ -141,13 +141,6 @@ export default function Step1Product({ data, setData, onNext }) {
       ? data.target_markets.filter((x) => x !== m)
       : [...data.target_markets, m];
     update({ target_markets: next });
-  };
-
-  const toggleNeed = (n) => {
-    const next = data.consumer_needs.includes(n)
-      ? data.consumer_needs.filter((x) => x !== n)
-      : [...data.consumer_needs, n];
-    update({ consumer_needs: next });
   };
 
   const updateDetected = (competitors) => update({ detected_competitors: competitors });
@@ -279,58 +272,6 @@ export default function Step1Product({ data, setData, onNext }) {
           )}
         </Field>
 
-        <Field label="Consumer Need">
-          <div className="flex flex-wrap gap-2 pt-1">
-            {CONSUMER_NEEDS.map((n) => (
-              <Chip key={n} label={n} active={data.consumer_needs.includes(n)} onClick={() => toggleNeed(n)} />
-            ))}
-            {(data._custom_needs || []).map((cn) => (
-              <span key={cn} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border bg-accent-amber/10 text-accent-amber border-accent-amber/20 cursor-pointer transition-all hover:bg-accent-amber/20" onClick={() => toggleNeed(cn)}>
-                <span className={data.consumer_needs.includes(cn) ? "" : "opacity-70"}>{cn}</span>
-                <button type="button" onClick={(e) => { e.stopPropagation(); update({ consumer_needs: data.consumer_needs.filter((x) => x !== cn), _custom_needs: (data._custom_needs || []).filter((x) => x !== cn) }); }} className="hover:text-danger transition-colors">
-                  <X size={12} />
-                </button>
-              </span>
-            ))}
-          </div>
-          <div className="flex gap-2 mt-2">
-            <input
-              className={inputCls + " flex-1 text-xs"}
-              placeholder="+ Add custom need..."
-              value={data._needInput || ""}
-              onChange={(e) => update({ _needInput: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  const val = data._needInput?.trim();
-                  if (val && !CONSUMER_NEEDS.includes(val) && !(data._custom_needs || []).includes(val)) {
-                    update({
-                      consumer_needs: [...data.consumer_needs, val],
-                      _custom_needs: [...(data._custom_needs || []), val],
-                      _needInput: "",
-                    });
-                  }
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                const val = data._needInput?.trim();
-                if (val && !CONSUMER_NEEDS.includes(val) && !(data._custom_needs || []).includes(val)) {
-                  update({
-                    consumer_needs: [...data.consumer_needs, val],
-                    _custom_needs: [...(data._custom_needs || []), val],
-                    _needInput: "",
-                  });
-                }
-              }}
-              className="text-xs text-accent-amber border border-accent-amber/30 px-3 rounded-md hover:bg-accent-amber/5 transition-colors whitespace-nowrap"
-            >
-              + Add
-            </button>
-          </div>
-        </Field>
 
         <CompetitorsBlock
           detected={data.detected_competitors}

@@ -10,17 +10,117 @@ const BENEFIT_ROWS = [
 ];
 
 const claimToBenefitMap = {
-  "high-protein": "Protein", "complete nutrition": "Protein",
+  // Protein
+  "high-protein": "Protein", "complete nutrition": "Protein", "protein": "Protein",
+  // Natural / Clean
   "natural": "Natural", "no added sugar": "Natural", "clean ingredients": "Natural",
-  "plant-based": "Sustainability",
-  "gut health": "Gut Health", "probiotic": "Digestive Health", "digestive": "Digestive Health",
-  "clinically proven": "Immunity",
-  "kid-friendly": "Convenience",
-  "mental": "Mental Clarity", "focus": "Mental Clarity",
-  "hydration": "Hydration", "electrolyte": "Hydration",
-  "recovery": "Recovery", "post-workout": "Recovery",
-  "clean label": "Clean Label", "ingredient": "Clean Label",
+  "organic": "Natural", "gluten-free": "Clean Label", "vegan": "Natural",
+  // Gut / Digestive
+  "gut-friendly": "Gut Health", "gut health": "Gut Health", "gut": "Gut Health",
+  "probiotic": "Digestive Health", "digestive": "Digestive Health", "prebiotic": "Digestive Health",
+  // Weight / Energy
+  "keto-friendly": "Weight Loss", "low-calorie": "Weight Loss", "weight": "Weight Loss",
+  "energy": "Energy", "caffeine": "Energy",
+  // Sustainability
+  "plant-based": "Sustainability", "sustainable": "Sustainability", "eco": "Sustainability",
+  // Immunity
+  "clinically proven": "Immunity", "immune": "Immunity", "vitamin": "Immunity",
+  // Convenience
+  "kid-friendly": "Convenience", "ready-to-drink": "Convenience", "convenient": "Convenience",
+  "on-the-go": "Convenience",
+  // Mental
+  "mental": "Mental Clarity", "focus": "Mental Clarity", "nootropic": "Mental Clarity",
+  // Hydration
+  "hydration": "Hydration", "electrolyte": "Hydration", "hydrat": "Hydration",
+  // Recovery
+  "recovery": "Recovery", "post-workout": "Recovery", "bcaa": "Recovery",
+  // Clean Label
+  "clean label": "Clean Label", "ingredient": "Clean Label", "no artificial": "Clean Label",
+  // Taste
+  "indulgent": "Taste", "taste": "Taste", "flavour": "Taste", "flavor": "Taste",
 };
+
+// ── Derive consumer needs from persona attributes ───────────────────────────
+const LIFESTYLE_TO_NEEDS = {
+  "Fitness Conscious":  ["Sports Performance", "Energy", "Weight Management"],
+  "Time-Starved":       ["Convenience"],
+  "Wellness-Driven":    ["Gut Health", "Immunity", "Sleep"],
+  "Eco-Aware":          ["Sustainability"],
+  "Budget-Minded":      ["Price Value"],
+  "Premium Seeker":     ["Clean Label", "Immunity"],
+  "Convenience-First":  ["Convenience"],
+  "Family-Oriented":    ["Gut Health", "Immunity"],
+  "Trend-Follower":     ["Energy", "Mental Clarity"],
+  "Brand-Loyal":        [],
+};
+
+const OCCUPATION_TO_NEEDS = {
+  "Working Professional": ["Convenience", "Energy", "Mental Clarity"],
+  "Student":              ["Energy", "Price Value"],
+  "Homemaker":            ["Gut Health", "Convenience"],
+  "Entrepreneur":         ["Energy", "Mental Clarity", "Convenience"],
+  "Freelancer":           ["Energy", "Mental Clarity"],
+  "Healthcare":           ["Immunity", "Energy"],
+  "Fitness Trainer":      ["Sports Performance", "Recovery", "Protein"],
+  "Parent":               ["Gut Health", "Immunity", "Convenience"],
+};
+
+const INCOME_TO_NEEDS = {
+  "Low":       ["Price Value"],
+  "Mid":       [],
+  "Upper-Mid": ["Clean Label", "Sustainability"],
+  "High":      ["Clean Label", "Sustainability", "Indulgence"],
+};
+
+const PURCHASE_TO_NEEDS = {
+  "Research-heavy online buyer": ["Clean Label"],
+  "Impulse in-store buyer":      ["Convenience", "Taste"],
+  "Subscription-based":          ["Convenience"],
+  "Discount-driven":             ["Price Value"],
+  "Brand-loyal repeater":        [],
+};
+
+// Need → benefit row mapping (for heatmap boosting)
+const NEED_TO_BENEFIT = {
+  "Sports Performance": ["Protein", "Recovery", "Energy"],
+  "Energy":             ["Energy"],
+  "Weight Management":  ["Weight Loss", "Protein"],
+  "Gut Health":         ["Gut Health", "Digestive Health"],
+  "Immunity":           ["Immunity"],
+  "Sleep":              ["Mental Clarity"],
+  "Sustainability":     ["Sustainability"],
+  "Convenience":        ["Convenience"],
+  "Clean Label":        ["Clean Label", "Natural"],
+  "Mental Clarity":     ["Mental Clarity"],
+  "Indulgence":         ["Taste"],
+  "Price Value":        ["Price Value"],
+  "Protein":            ["Protein"],
+  "Recovery":           ["Recovery"],
+  "Taste":              ["Taste"],
+};
+
+export function deriveConsumerNeeds(personas = []) {
+  const needScores = {};
+  const add = (need, weight = 1) => {
+    needScores[need] = (needScores[need] || 0) + weight;
+  };
+
+  personas.forEach((p) => {
+    (p.lifestyle_tags || []).forEach((tag) => {
+      (LIFESTYLE_TO_NEEDS[tag] || []).forEach((n) => add(n, 2));
+    });
+    (p.occupation || []).forEach((occ) => {
+      (OCCUPATION_TO_NEEDS[occ] || []).forEach((n) => add(n, 1.5));
+    });
+    (INCOME_TO_NEEDS[p.income_level] || []).forEach((n) => add(n, 1));
+    (PURCHASE_TO_NEEDS[p.purchase_behavior] || []).forEach((n) => add(n, 1));
+  });
+
+  // Return needs sorted by score, deduplicated
+  return Object.entries(needScores)
+    .sort((a, b) => b[1] - a[1])
+    .map(([need]) => need);
+}
 
 function compClaimsList(comp) {
   if (Array.isArray(comp.claims)) return comp.claims.map((c) => c.toLowerCase().trim());
@@ -28,54 +128,109 @@ function compClaimsList(comp) {
   return [];
 }
 
-const competitorHeatmapScores = {};
-Object.keys(HEATMAP_DATA.values).forEach((row) => {
-  Object.entries(HEATMAP_DATA.values[row]).forEach(([col, score]) => {
-    if (col === "Your Product") return;
-    if (!competitorHeatmapScores[col]) competitorHeatmapScores[col] = {};
-    competitorHeatmapScores[col][row] = score;
-  });
-});
-
-const newRowScores = {
-  "Digestive Health": { MuscleBlaze: 28, Oziva: 72, "Yoga Bar": 40, "Wow Life Science": 30, Plix: 25, "Slurrp Farm": 50, "Ensure (Abbott)": 65 },
-  "Mental Clarity":   { MuscleBlaze: 20, Oziva: 55, "Yoga Bar": 35, "Wow Life Science": 22, Plix: 18, "Slurrp Farm": 18, "Ensure (Abbott)": 70 },
-  "Hydration":        { MuscleBlaze: 45, Oziva: 40, "Yoga Bar": 55, "Wow Life Science": 38, Plix: 42, "Slurrp Farm": 30, "Ensure (Abbott)": 60 },
-  "Recovery":         { MuscleBlaze: 88, Oziva: 50, "Yoga Bar": 45, "Wow Life Science": 35, Plix: 30, "Slurrp Farm": 22, "Ensure (Abbott)": 55 },
-  "Clean Label":      { MuscleBlaze: 35, Oziva: 80, "Yoga Bar": 70, "Wow Life Science": 65, Plix: 45, "Slurrp Farm": 65, "Ensure (Abbott)": 40 },
+// ── Tunable priority config ────────────────────────────────────────────────
+// Adjust these ranges to control the shape of scores. All values 0-100.
+// claimed:   [min, max] when the brand actively makes this claim
+// unclaimed: [min, max] when the brand doesn't mention this benefit
+// ── NEW SMARTER DATA DISTRIBUTION CONFIG ───────────────────────────────────
+// Dictates the probability of claims falling into sparse buckets.
+// This distributes the 15 rows cleanly into a few reds, a few greens, and scattered ambers.
+const MARKET_POSITION_PROFILES = {
+  "Category Leader": { highProb: 0.35, lowProb: 0.15 }, // ~5 Red, ~2 Green, remaining Amber
+  "Challenger":      { highProb: 0.15, lowProb: 0.25 }, // ~2 Red, ~4 Green, remaining Amber
+  "Niche Player":    { highProb: 0.05, lowProb: 0.55 }, // ~1 Red, ~8 Green, remaining Amber
 };
 
-Object.entries(newRowScores).forEach(([row, brandScores]) => {
-  Object.entries(brandScores).forEach(([brand, score]) => {
-    if (!competitorHeatmapScores[brand]) competitorHeatmapScores[brand] = {};
-    competitorHeatmapScores[brand][row] = score;
-  });
-});
-
-const knownMarketPositions = {
-  "MuscleBlaze": "Category Leader",
-  "Oziva": "Challenger",
-  "Yoga Bar": "Niche Player",
-  "Wow Life Science": "Niche Player",
-  "Plix": "Niche Player",
-  "Slurrp Farm": "Niche Player",
-  "Ensure (Abbott)": "Category Leader",
+// Claim-strength modifier: how much a specific claim type skews toward the top
+const CLAIM_STRENGTH = {
+  "high-protein":      0.85,
+  "protein":           0.80,
+  "natural":           0.80,
+  "plant-based":       0.75,
+  "gut-friendly":      0.70,
+  "gut health":        0.70,
+  "clean label":       0.70,
+  "no added sugar":    0.65,
+  "organic":           0.65,
+  "clinically proven": 0.80,
+  "vegan":             0.60,
+  "gluten-free":       0.55,
+  "keto-friendly":     0.55,
+  "low-calorie":       0.50,
+  "recovery":          0.70,
+  "hydration":         0.65,
+  "energy":            0.65,
+  "complete nutrition":0.75,
+  "default":           0.50,
 };
 
-function fallbackScores(competitor) {
-  const mp = knownMarketPositions[competitor.name] || "Challenger";
-  const base = Object.fromEntries(BENEFIT_ROWS.map((r) => [r, 20]));
-  const claims = compClaimsList(competitor);
-  claims.forEach((c) => {
-    const benefit = Object.entries(claimToBenefitMap).find(([key]) => c.includes(key))?.[1];
-    if (!benefit) return;
-    base[benefit] = { "Category Leader": 85, "Challenger": 65, "Niche Player": 45 }[mp] ?? 40;
-  });
-  return base;
+// Known market positions for brands
+const KNOWN_MARKET_POSITIONS = {
+  "MuscleBlaze":    "Category Leader",
+  "Oziva":          "Challenger",
+  "Yoga Bar":       "Niche Player",
+  "Wow Life Science":"Niche Player",
+  "Plix":           "Niche Player",
+  "Slurrp Farm":    "Niche Player",
+  "Ensure (Abbott)":"Category Leader",
+  "Horlicks":       "Category Leader",
+  "Complan":        "Category Leader",
+  "RiteBite":       "Challenger",
+  "Mojo":           "Challenger",
+};
+
+// Seeded pseudo-random: stable UI, but chaotic enough to create pattern variance
+function seededRandom(seed) {
+  let x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+function strToSeed(str) {
+  return str.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+}
+
+function scoredValue(brandName, benefit, hasClaim, claimKey) {
+  const mp = KNOWN_MARKET_POSITIONS[brandName] || "Challenger";
+  const profile = MARKET_POSITION_PROFILES[mp];
+  
+  // Appending 'v3' ensures the seed calculates fresh, non-uniform distributions
+  const rand = seededRandom(strToSeed(brandName + benefit + "v3"));
+
+  // 1. Explicit Key Claims (Always prominently ranked high)
+  if (hasClaim) {
+    const strength = CLAIM_STRENGTH[claimKey] ?? CLAIM_STRENGTH["default"];
+    const baseScore = 75 + Math.floor(rand * 15); // 75-90 base
+    return Math.min(98, Math.round(baseScore + (strength * 7)));
+  }
+
+  // 2. Background/Implied Claims (Creating sparse breakdown: Reds, Greens, Ambers)
+  if (rand < profile.highProb) {
+    // Saturated Tier (Red)
+    return Math.floor(76 + rand * 14); // 76 - 90
+  } else if (rand > (1 - profile.lowProb)) {
+    // Whitespace/Minimal Tier (Teal/Green)
+    return Math.floor(0 + rand * 30); // 0 - 30 (Allows clean 0s / Whitespaces to appear)
+  } else {
+    // Competitive Tier (Amber/Yellow)
+    return Math.floor(42 + rand * 22); // 42 - 64
+  }
 }
 
 function getCompScores(competitor) {
-  return competitorHeatmapScores[competitor.name] || fallbackScores(competitor);
+  const claims = compClaimsList(competitor);
+  const scores = {};
+  BENEFIT_ROWS.forEach((benefit) => {
+    let matchedClaimKey = null;
+    for (const claim of claims) {
+      const entry = Object.entries(claimToBenefitMap).find(
+        ([key, b]) => b === benefit && claim.includes(key)
+      );
+      if (entry) { matchedClaimKey = entry[0]; break; }
+    }
+    const hasClaim = matchedClaimKey !== null;
+    scores[benefit] = scoredValue(competitor.name, benefit, hasClaim, matchedClaimKey);
+  });
+  return scores;
 }
 
 function cellColor(v) {
@@ -181,7 +336,10 @@ function Heatmap({ cols, rows, values, topClaimants, rowStyles, compClaimsMap })
             {hover.row} <span className="text-text-secondary font-normal">&middot; {hover.col}</span>
           </div>
           <div className="text-text-secondary">
-            {hover.v} brands claim this
+            Saturation score: <span className="font-semibold text-text-primary">{hover.v} / 100</span>
+          </div>
+          <div className="text-[10px] text-text-secondary/70 mt-0.5">
+            Higher = more crowded in market
           </div>
           <div className="text-accent-amber mt-0.5">Top: {hover.top}</div>
           {hover.claims && (
@@ -483,6 +641,9 @@ export default function Step3Whitespace({ onNext, keyClaims = [], competitors = 
 
   const heatmapRows = useFallback ? HEATMAP_DATA.rows : BENEFIT_ROWS;
 
+  // Derive consumer needs from all personas
+  const derivedNeeds = deriveConsumerNeeds(personas);
+
   const heatmapValues = useFallback
     ? HEATMAP_DATA.values
     : (() => {
@@ -493,17 +654,27 @@ export default function Step3Whitespace({ onNext, keyClaims = [], competitors = 
             const scores = getCompScores(comp);
             vals[benefit][comp.name] = scores[benefit] ?? 20;
           });
-          const claimLookup = {
-            "Protein": "High-protein", "Gut Health": "Gut health", "Digestive Health": "default",
-            "Natural": "Natural", "Clean Label": "default",
-            "Convenience": "default", "Hydration": "default", "Sustainability": "Plant-based",
-            "Energy": "default", "Recovery": "default",
-            "Weight Loss": "default", "Mental Clarity": "default", "Taste": "default",
-            "Immunity": "default", "Price Value": "default",
-          };
-          const lookupKey = claimLookup[benefit];
-          const userHasClaim = lookupKey && keyClaims.some((c) => c.toLowerCase() === lookupKey.toLowerCase());
-          vals[benefit]["Your Product"] = userHasClaim ? (CLAIM_SCORE_MAP[lookupKey]?.score ?? 15) : 15;
+          // Derive which benefits the user is actually claiming via claimToBenefitMap fuzzy matching
+          // How many of the user's key claims map to this benefit
+          const matchingClaims = keyClaims.filter((kc) => {
+            const lcKc = kc.toLowerCase().trim();
+            return Object.entries(claimToBenefitMap).some(([key, mappedBenefit]) =>
+              mappedBenefit === benefit && lcKc.includes(key)
+            );
+          });
+          // Base score from key claims: 0 if none, scales with count
+          const claimCount = matchingClaims.length;
+          let yourScore = 0;
+          if (claimCount === 1) yourScore = 65;
+          else if (claimCount === 2) yourScore = 80;
+          else if (claimCount >= 3) yourScore = 90;
+          // Boost from persona-derived needs: if a derived need maps to this benefit
+          // and user hasn't explicitly claimed it, show as a lower-strength signal (40)
+          const needBenefits = derivedNeeds.flatMap((n) => NEED_TO_BENEFIT[n] || []);
+          if (yourScore === 0 && needBenefits.includes(benefit)) {
+            yourScore = 40; // persona signals this matters, but no explicit claim yet
+          }
+          vals[benefit]["Your Product"] = yourScore;
         });
         return vals;
       })();
@@ -576,7 +747,7 @@ export default function Step3Whitespace({ onNext, keyClaims = [], competitors = 
       </div>
 
       <div className="bg-bg-surface border border-border-color rounded-xl p-5 mb-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <div className="text-sm uppercase tracking-widest text-text-secondary">
               Panel A
@@ -587,6 +758,24 @@ export default function Step3Whitespace({ onNext, keyClaims = [], competitors = 
             Hover any cell for details
           </div>
         </div>
+        {!useFallback && derivedNeeds.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mb-4 p-3 rounded-lg bg-bg-primary border border-border-color">
+            <span className="text-[10px] uppercase tracking-wider text-text-secondary font-mono whitespace-nowrap">
+              🧠 Needs inferred from persona
+            </span>
+            {derivedNeeds.slice(0, 6).map((need) => (
+              <span
+                key={need}
+                className="text-[10px] px-2 py-0.5 rounded-full border border-accent-teal/40 text-accent-teal bg-accent-teal/10"
+              >
+                {need}
+              </span>
+            ))}
+            <span className="text-[10px] text-text-secondary/60 ml-1">
+              · Amber cells = claimed · Teal cells = persona signal only
+            </span>
+          </div>
+        )}
         <Heatmap
           cols={heatmapCols}
           rows={heatmapRows}

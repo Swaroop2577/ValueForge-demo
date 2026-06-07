@@ -18,9 +18,14 @@ const INITIAL_DATA = {
     consumer_needs: ["Convenience", "Sustainability", "Sports Performance"],
     key_claims: ["High-protein", "Natural", "Oat-based"],
     competitors: [
-      { name: "MuscleBlaze", claims: "High protein, gym-focused, mass brand" },
-      { name: "Oziva", claims: "Plant-based, clean label, premium pricing" },
-      { name: "Yoga Bar", claims: "Natural ingredients, indulgent taste" },
+      { name: "MuscleBlaze", claims: ["High-protein", "Gym-focused", "Mass brand"], category: "Sports Nutrition", marketPosition: "Category Leader" },
+      { name: "Oziva", claims: ["Plant-based", "Clean label", "Premium pricing"], category: "Functional Beverages", marketPosition: "Challenger" },
+      { name: "Yoga Bar", claims: ["Natural ingredients", "Indulgent taste"], category: "Functional Beverages / Snacks", marketPosition: "Niche Player" },
+    ],
+    detected_competitors: [
+      { name: "MuscleBlaze", claims: ["High-protein", "Gym-focused", "Mass brand"], category: "Sports Nutrition", marketPosition: "Category Leader" },
+      { name: "Oziva", claims: ["Plant-based", "Clean label", "Premium pricing"], category: "Functional Beverages", marketPosition: "Challenger" },
+      { name: "Yoga Bar", claims: ["Natural ingredients", "Indulgent taste"], category: "Functional Beverages / Snacks", marketPosition: "Niche Player" },
     ],
   },
 };
@@ -93,7 +98,11 @@ export default function Wizard({ onExit, initialProject, onProductNameChange }) 
         {step === 3 && (
           <Step3Whitespace
             keyClaims={data.step1.key_claims || []}
-            competitors={data.step1.competitors || []}
+            competitors={
+              (data.step1.detected_competitors && data.step1.detected_competitors.length > 0)
+                ? data.step1.detected_competitors
+                : data.step1.competitors || []
+            }
             personas={personas}
             onNext={() => goTo(4)}
           />
