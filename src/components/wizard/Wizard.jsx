@@ -93,6 +93,7 @@ export default function Wizard({ onExit, initialProject, onProductNameChange }) 
         {step === 3 && (
           <Step3Whitespace
             keyClaims={data.step1.key_claims || []}
+            competitors={data.step1.competitors || []}
             personas={personas}
             onNext={() => goTo(4)}
           />

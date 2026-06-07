@@ -3,6 +3,81 @@ import { ArrowRight } from "lucide-react";
 import { HEATMAP_DATA, CLAIM_SATURATION, WHITESPACE_OPPORTUNITIES, RESONANCE_BY_PERSONA } from "../../data/demoData";
 import SaturationBar from "../shared/SaturationBar";
 
+const BENEFIT_ROWS = [
+  "Protein", "Gut Health", "Digestive Health", "Natural", "Clean Label",
+  "Convenience", "Hydration", "Sustainability", "Energy", "Recovery",
+  "Weight Loss", "Mental Clarity", "Taste", "Immunity", "Price Value",
+];
+
+const claimToBenefitMap = {
+  "high-protein": "Protein", "complete nutrition": "Protein",
+  "natural": "Natural", "no added sugar": "Natural", "clean ingredients": "Natural",
+  "plant-based": "Sustainability",
+  "gut health": "Gut Health", "probiotic": "Digestive Health", "digestive": "Digestive Health",
+  "clinically proven": "Immunity",
+  "kid-friendly": "Convenience",
+  "mental": "Mental Clarity", "focus": "Mental Clarity",
+  "hydration": "Hydration", "electrolyte": "Hydration",
+  "recovery": "Recovery", "post-workout": "Recovery",
+  "clean label": "Clean Label", "ingredient": "Clean Label",
+};
+
+function compClaimsList(comp) {
+  if (Array.isArray(comp.claims)) return comp.claims.map((c) => c.toLowerCase().trim());
+  if (typeof comp.claims === "string") return comp.claims.split(/[,;]\s*/).map((c) => c.toLowerCase().trim());
+  return [];
+}
+
+const competitorHeatmapScores = {};
+Object.keys(HEATMAP_DATA.values).forEach((row) => {
+  Object.entries(HEATMAP_DATA.values[row]).forEach(([col, score]) => {
+    if (col === "Your Product") return;
+    if (!competitorHeatmapScores[col]) competitorHeatmapScores[col] = {};
+    competitorHeatmapScores[col][row] = score;
+  });
+});
+
+const newRowScores = {
+  "Digestive Health": { MuscleBlaze: 28, Oziva: 72, "Yoga Bar": 40, "Wow Life Science": 30, Plix: 25, "Slurrp Farm": 50, "Ensure (Abbott)": 65 },
+  "Mental Clarity":   { MuscleBlaze: 20, Oziva: 55, "Yoga Bar": 35, "Wow Life Science": 22, Plix: 18, "Slurrp Farm": 18, "Ensure (Abbott)": 70 },
+  "Hydration":        { MuscleBlaze: 45, Oziva: 40, "Yoga Bar": 55, "Wow Life Science": 38, Plix: 42, "Slurrp Farm": 30, "Ensure (Abbott)": 60 },
+  "Recovery":         { MuscleBlaze: 88, Oziva: 50, "Yoga Bar": 45, "Wow Life Science": 35, Plix: 30, "Slurrp Farm": 22, "Ensure (Abbott)": 55 },
+  "Clean Label":      { MuscleBlaze: 35, Oziva: 80, "Yoga Bar": 70, "Wow Life Science": 65, Plix: 45, "Slurrp Farm": 65, "Ensure (Abbott)": 40 },
+};
+
+Object.entries(newRowScores).forEach(([row, brandScores]) => {
+  Object.entries(brandScores).forEach(([brand, score]) => {
+    if (!competitorHeatmapScores[brand]) competitorHeatmapScores[brand] = {};
+    competitorHeatmapScores[brand][row] = score;
+  });
+});
+
+const knownMarketPositions = {
+  "MuscleBlaze": "Category Leader",
+  "Oziva": "Challenger",
+  "Yoga Bar": "Niche Player",
+  "Wow Life Science": "Niche Player",
+  "Plix": "Niche Player",
+  "Slurrp Farm": "Niche Player",
+  "Ensure (Abbott)": "Category Leader",
+};
+
+function fallbackScores(competitor) {
+  const mp = knownMarketPositions[competitor.name] || "Challenger";
+  const base = Object.fromEntries(BENEFIT_ROWS.map((r) => [r, 20]));
+  const claims = compClaimsList(competitor);
+  claims.forEach((c) => {
+    const benefit = Object.entries(claimToBenefitMap).find(([key]) => c.includes(key))?.[1];
+    if (!benefit) return;
+    base[benefit] = { "Category Leader": 85, "Challenger": 65, "Niche Player": 45 }[mp] ?? 40;
+  });
+  return base;
+}
+
+function getCompScores(competitor) {
+  return competitorHeatmapScores[competitor.name] || fallbackScores(competitor);
+}
+
 function cellColor(v) {
   if (v >= 75) return "bg-danger";
   if (v >= 40) return "bg-accent-amber";
@@ -14,8 +89,14 @@ function cellOpacity(v) {
   return Math.max(0.35, Math.min(1, v / 100));
 }
 
-function Heatmap() {
+function Heatmap({ cols, rows, values, topClaimants, rowStyles, compClaimsMap }) {
   const [hover, setHover] = useState(null);
+
+  const getTopClaims = (col) => {
+    const claims = compClaimsMap?.[col];
+    if (!claims || claims.length === 0) return null;
+    return claims.slice(0, 2).join(" \u00b7 ");
+  };
 
   return (
     <div className="relative">
@@ -24,7 +105,7 @@ function Heatmap() {
           <thead>
             <tr>
               <th className="text-left text-text-secondary font-medium pl-2 pb-2">Benefit</th>
-              {HEATMAP_DATA.cols.map((c) => (
+              {cols.map((c) => (
                 <th
                   key={c}
                   className={`text-text-secondary font-medium pb-2 px-2 ${
@@ -37,41 +118,52 @@ function Heatmap() {
             </tr>
           </thead>
           <tbody>
-            {HEATMAP_DATA.rows.map((row) => (
-              <tr key={row}>
-                <td className="text-text-primary text-left pl-2 pr-3 py-1 font-medium">{row}</td>
-                {HEATMAP_DATA.cols.map((col) => {
-                  const v = HEATMAP_DATA.values[row]?.[col] ?? 0;
-                  const isYou = col === "Your Product";
-                  return (
-                    <td key={col} className="p-0">
-                      <div
-                        className={`relative h-10 rounded flex items-center justify-center font-mono text-xs cursor-pointer transition-all ${
-                          isYou ? "border-2 border-dashed border-accent-amber" : ""
-                        } ${cellColor(v)}`}
-                        style={{ opacity: cellOpacity(v), color: v >= 40 ? "#1A1F35" : v > 0 ? "var(--accent-teal)" : "var(--text-secondary)" }}
-                        onMouseEnter={(e) =>
-                          setHover({
-                            x: e.clientX,
-                            y: e.clientY,
-                            row,
-                            col,
-                            v,
-                            top: HEATMAP_DATA.topClaimants[row],
-                          })
-                        }
-                        onMouseMove={(e) =>
-                          setHover((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : null))
-                        }
-                        onMouseLeave={() => setHover(null)}
-                      >
-                        {v > 0 ? v : "\u2014"}
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+            {rows.map((row) => {
+              const rs = rowStyles?.[row];
+              return (
+                <tr key={row}>
+                  <td
+                    className={`text-left pl-2 pr-3 py-1 font-medium ${
+                      rs?.leftBorder ? "pl-1.5 border-l-[3px] " + rs.leftBorder : ""
+                    } ${rs?.bg ? rs.bg : "text-text-primary"}`}
+                    style={rs?.bgColor ? { backgroundColor: rs.bgColor } : undefined}
+                  >
+                    {row}
+                  </td>
+                  {cols.map((col) => {
+                    const v = values[row]?.[col] ?? 0;
+                    const isYou = col === "Your Product";
+                    return (
+                      <td key={col} className="p-0">
+                        <div
+                          className={`relative h-10 rounded flex items-center justify-center font-mono text-xs cursor-pointer transition-all ${
+                            isYou ? "border-2 border-dashed border-accent-amber" : ""
+                          } ${cellColor(v)}`}
+                          style={{ opacity: cellOpacity(v), color: v >= 40 ? "#1A1F35" : v > 0 ? "var(--accent-teal)" : "var(--text-secondary)" }}
+                          onMouseEnter={(e) =>
+                            setHover({
+                              x: e.clientX,
+                              y: e.clientY,
+                              row,
+                              col,
+                              v,
+                              top: topClaimants?.[row] || "\u2014",
+                              claims: getTopClaims(col),
+                            })
+                          }
+                          onMouseMove={(e) =>
+                            setHover((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : null))
+                          }
+                          onMouseLeave={() => setHover(null)}
+                        >
+                          {v > 0 ? v : "\u2014"}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -92,6 +184,11 @@ function Heatmap() {
             {hover.v} brands claim this
           </div>
           <div className="text-accent-amber mt-0.5">Top: {hover.top}</div>
+          {hover.claims && (
+            <div className="text-text-secondary mt-1 border-t border-border-color/50 pt-1">
+              Claims: {hover.claims}
+            </div>
+          )}
         </div>
       )}
 
@@ -268,7 +365,8 @@ const CONFIDENCE_STYLES = {
   speculative: { border: "border-[#252B47]", badge: "bg-[#252B47]/10 text-text-secondary border-[#252B47]/30", shadow: "" },
 };
 
-function WhitespaceCards({ personas }) {
+function WhitespaceCards({ personas, dynamicZones }) {
+  const cards = dynamicZones || WHITESPACE_OPPORTUNITIES;
   const getPersonaName = (p, idx) => p.persona_name || `Persona ${idx + 1}`;
 
   return (
@@ -280,7 +378,7 @@ function WhitespaceCards({ personas }) {
         </span>
       </div>
       <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "thin" }}>
-        {WHITESPACE_OPPORTUNITIES.map((w, i) => {
+        {cards.map((w, i) => {
           const cs = CONFIDENCE_STYLES[w.confidence];
           const fits = w.fitByPersona || personas.map(() => w.fit);
           return (
@@ -372,9 +470,100 @@ function WhitespaceCards({ personas }) {
   );
 }
 
-export default function Step3Whitespace({ onNext, keyClaims = [], personas = [] }) {
+export default function Step3Whitespace({ onNext, keyClaims = [], competitors = [], personas = [] }) {
   const [activeResonanceId, setActiveResonanceId] = useState(
     personas.length > 0 ? personas[0].id : "persona_1"
+  );
+
+  const useFallback = keyClaims.length === 0 || competitors.length === 0;
+
+  const heatmapCols = useFallback
+    ? HEATMAP_DATA.cols
+    : [...competitors.map((c) => c.name), "Your Product"];
+
+  const heatmapRows = useFallback ? HEATMAP_DATA.rows : BENEFIT_ROWS;
+
+  const heatmapValues = useFallback
+    ? HEATMAP_DATA.values
+    : (() => {
+        const vals = {};
+        BENEFIT_ROWS.forEach((benefit) => {
+          vals[benefit] = {};
+          competitors.forEach((comp) => {
+            const scores = getCompScores(comp);
+            vals[benefit][comp.name] = scores[benefit] ?? 20;
+          });
+          const claimLookup = {
+            "Protein": "High-protein", "Gut Health": "Gut health", "Digestive Health": "default",
+            "Natural": "Natural", "Clean Label": "default",
+            "Convenience": "default", "Hydration": "default", "Sustainability": "Plant-based",
+            "Energy": "default", "Recovery": "default",
+            "Weight Loss": "default", "Mental Clarity": "default", "Taste": "default",
+            "Immunity": "default", "Price Value": "default",
+          };
+          const lookupKey = claimLookup[benefit];
+          const userHasClaim = lookupKey && keyClaims.some((c) => c.toLowerCase() === lookupKey.toLowerCase());
+          vals[benefit]["Your Product"] = userHasClaim ? (CLAIM_SCORE_MAP[lookupKey]?.score ?? 15) : 15;
+        });
+        return vals;
+      })();
+
+  const userBenefits = new Set();
+  keyClaims.forEach((c) => {
+    Object.entries(claimToBenefitMap).forEach(([key, benefit]) => {
+      if (c.toLowerCase().includes(key)) userBenefits.add(benefit);
+    });
+  });
+
+  const rowStyles = {};
+  if (!useFallback) {
+    heatmapRows.forEach((row) => {
+      const allCompScores = competitors
+        .map((c) => heatmapValues[row]?.[c.name] ?? 0)
+        .filter((v) => v > 0);
+      const isWhitespace = allCompScores.length === 0 || allCompScores.every((v) => v < 40);
+      const isUser = userBenefits.has(row);
+      if (isWhitespace) {
+        rowStyles[row] = { leftBorder: "border-accent-teal", bg: "text-text-primary" };
+      } else if (isUser) {
+        rowStyles[row] = { leftBorder: "border-accent-amber", bgColor: "#1E2440", bg: "text-text-primary" };
+      }
+    });
+  }
+
+  const whitespaceRows = !useFallback
+    ? heatmapRows.filter((row) => {
+        const scores = competitors.map((c) => heatmapValues[row]?.[c.name] ?? 0);
+        return scores.every((v) => v < 40);
+      })
+    : [];
+
+  const dynamicZones = !useFallback && whitespaceRows.length >= 2
+    ? [
+        { ...WHITESPACE_OPPORTUNITIES[0], zone: whitespaceRows[0] + " \u00d7 " + whitespaceRows[1], fit: 65, fitByPersona: [65, 60, 55, 50] },
+        { ...WHITESPACE_OPPORTUNITIES[1], zone: whitespaceRows.length > 2 ? whitespaceRows[1] + " \u00d7 " + whitespaceRows[2] : whitespaceRows[0] + " \u00d7 " + whitespaceRows[1], fit: 55, fitByPersona: [55, 50, 45, 40] },
+        { ...WHITESPACE_OPPORTUNITIES[2], zone: whitespaceRows[0] + " \u00d7 " + (whitespaceRows[2] || whitespaceRows[1]), fit: 60, fitByPersona: [60, 55, 50, 45] },
+      ]
+    : null;
+
+  const topClaimants = useFallback
+    ? HEATMAP_DATA.topClaimants
+    : (() => {
+        const map = {};
+        BENEFIT_ROWS.forEach((row) => {
+          let top = null;
+          let topScore = -1;
+          competitors.forEach((c) => {
+            const s = heatmapValues[row]?.[c.name] ?? 0;
+            if (s > topScore) { topScore = s; top = c.name; }
+          });
+          map[row] = top ? `${top} (${topScore})` : "\u2014";
+        });
+        return map;
+      })();
+
+  const compClaimsMap = useFallback ? null : Object.fromEntries(
+    competitors.map((c) => [c.name, Array.isArray(c.claims) ? c.claims : typeof c.claims === "string" ? c.claims.split(/[,;]\s*/) : []])
   );
 
   return (
@@ -398,8 +587,15 @@ export default function Step3Whitespace({ onNext, keyClaims = [], personas = [] 
             Hover any cell for details
           </div>
         </div>
-        <Heatmap />
-        <WhitespaceCards personas={personas} />
+        <Heatmap
+          cols={heatmapCols}
+          rows={heatmapRows}
+          values={heatmapValues}
+          topClaimants={topClaimants}
+          rowStyles={rowStyles}
+          compClaimsMap={compClaimsMap}
+        />
+        <WhitespaceCards personas={personas} dynamicZones={dynamicZones} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[35%_1fr_35%] gap-5 mb-5">
