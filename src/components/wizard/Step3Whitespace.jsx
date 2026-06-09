@@ -914,7 +914,7 @@ function WhitespaceCards({ personas, dynamicZones }) {
                       : "border-danger text-danger bg-danger/10"
                   }`}
                 >
-                  {w.type === "virgin" ? "VIRGIN WHITESPACE" : "ABANDONED WHITESPACE"}
+                  {w.type === "virgin" ? "UNTAPPED MARKET" : "DORMANT SECTOR"}
                 </span>
                 <span className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${cs.badge}`}>
                   {w.confidence === "high" ? "HIGH" : w.confidence === "medium" ? "MEDIUM" : "SPECULATIVE"}
