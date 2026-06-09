@@ -18,14 +18,14 @@ const INITIAL_DATA = {
     consumer_needs: ["Convenience", "Sustainability", "Sports Performance"],
     key_claims: ["High-protein", "Natural", "Oat-based"],
     competitors: [
-      { name: "MuscleBlaze", claims: ["High-protein", "Gym-focused", "Mass brand"], category: "Sports Nutrition", marketPosition: "Category Leader" },
-      { name: "Oziva", claims: ["Plant-based", "Clean label", "Premium pricing"], category: "Functional Beverages", marketPosition: "Challenger" },
-      { name: "Yoga Bar", claims: ["Natural ingredients", "Indulgent taste"], category: "Functional Beverages / Snacks", marketPosition: "Niche Player" },
+      { name: "MuscleBlaze", claims: ["High-protein", "Gym-focused", "Mass brand", "Pre-workout", "Post-workout"], category: "Sports Nutrition", marketPosition: "Category Leader" },
+      { name: "Oziva", claims: ["Plant-based", "Clean label", "Gut-friendly", "Immunity support", "Weight Loss", "Natural", "Vegan"], category: "Functional Beverages", marketPosition: "Challenger" },
+      { name: "Yoga Bar", claims: ["Natural", "Indulgent", "High-protein", "No added sugar", "Energy boost"], category: "Functional Beverages / Snacks", marketPosition: "Niche Player" },
     ],
     detected_competitors: [
-      { name: "MuscleBlaze", claims: ["High-protein", "Gym-focused", "Mass brand"], category: "Sports Nutrition", marketPosition: "Category Leader" },
-      { name: "Oziva", claims: ["Plant-based", "Clean label", "Premium pricing"], category: "Functional Beverages", marketPosition: "Challenger" },
-      { name: "Yoga Bar", claims: ["Natural ingredients", "Indulgent taste"], category: "Functional Beverages / Snacks", marketPosition: "Niche Player" },
+      { name: "MuscleBlaze", claims: ["High-protein", "Gym-focused", "Mass brand", "Pre-workout", "Post-workout"], category: "Sports Nutrition", marketPosition: "Category Leader" },
+      { name: "Oziva", claims: ["Plant-based", "Clean label", "Gut-friendly", "Immunity support", "Weight Loss", "Natural", "Vegan"], category: "Functional Beverages", marketPosition: "Challenger" },
+      { name: "Yoga Bar", claims: ["Natural", "Indulgent", "High-protein", "No added sugar", "Energy boost"], category: "Functional Beverages / Snacks", marketPosition: "Niche Player" },
     ],
   },
 };

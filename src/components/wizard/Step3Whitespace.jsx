@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ArrowRight } from "lucide-react";
 import { HEATMAP_DATA, CLAIM_SATURATION, WHITESPACE_OPPORTUNITIES, RESONANCE_BY_PERSONA } from "../../data/demoData";
 import SaturationBar from "../shared/SaturationBar";
@@ -9,36 +9,122 @@ const BENEFIT_ROWS = [
   "Weight Loss", "Mental Clarity", "Taste", "Immunity", "Price Value",
 ];
 
-const claimToBenefitMap = {
-  // Protein
-  "high-protein": "Protein", "complete nutrition": "Protein", "protein": "Protein",
-  // Natural / Clean
-  "natural": "Natural", "no added sugar": "Natural", "clean ingredients": "Natural",
-  "organic": "Natural", "gluten-free": "Clean Label", "vegan": "Natural",
-  // Gut / Digestive
-  "gut-friendly": "Gut Health", "gut health": "Gut Health", "gut": "Gut Health",
-  "probiotic": "Digestive Health", "digestive": "Digestive Health", "prebiotic": "Digestive Health",
-  // Weight / Energy
-  "keto-friendly": "Weight Loss", "low-calorie": "Weight Loss", "weight": "Weight Loss",
-  "energy": "Energy", "caffeine": "Energy",
-  // Sustainability
-  "plant-based": "Sustainability", "sustainable": "Sustainability", "eco": "Sustainability",
-  // Immunity
-  "clinically proven": "Immunity", "immune": "Immunity", "vitamin": "Immunity",
-  // Convenience
-  "kid-friendly": "Convenience", "ready-to-drink": "Convenience", "convenient": "Convenience",
-  "on-the-go": "Convenience",
-  // Mental
-  "mental": "Mental Clarity", "focus": "Mental Clarity", "nootropic": "Mental Clarity",
-  // Hydration
-  "hydration": "Hydration", "electrolyte": "Hydration", "hydrat": "Hydration",
-  // Recovery
-  "recovery": "Recovery", "post-workout": "Recovery", "bcaa": "Recovery",
-  // Clean Label
-  "clean label": "Clean Label", "ingredient": "Clean Label", "no artificial": "Clean Label",
-  // Taste
-  "indulgent": "Taste", "taste": "Taste", "flavour": "Taste", "flavor": "Taste",
+// Each claim keyword maps to ONE OR MORE benefit rows
+// This means "plant-based" correctly signals both Natural AND Sustainability
+const claimToBenefitsMap = {
+  // ── Protein & Performance ────────────────────────────────────────────
+  "high-protein":        ["Protein"],
+  "whey-based":          ["Protein", "Recovery"],
+  "whey":                ["Protein", "Recovery"],
+  "plant protein":       ["Protein", "Natural", "Sustainability"],
+  "protein":             ["Protein"],
+  "complete nutrition":  ["Protein", "Immunity"],
+  "post-workout":        ["Recovery", "Protein"],
+  "muscle recovery":     ["Recovery"],
+  "pre-workout":         ["Energy", "Recovery"],
+  "bcaa":                ["Recovery", "Protein"],
+  "gym-focused":         ["Protein", "Recovery", "Energy"],
+  "mass brand":          ["Protein"],
+  "sports":              ["Recovery", "Energy", "Protein"],
+  "performance":         ["Recovery", "Energy"],
+
+  // ── Natural & Clean ──────────────────────────────────────────────────
+  "natural":             ["Natural"],
+  "no added sugar":      ["Natural", "Clean Label"],
+  "organic":             ["Natural", "Clean Label"],
+  "clean label":         ["Clean Label", "Natural"],
+  "clean ingredients":   ["Natural", "Clean Label"],
+  "no artificial":       ["Clean Label", "Natural"],
+  "minimally processed": ["Natural", "Clean Label"],
+  "whole grain":         ["Natural", "Gut Health"],
+  "ingredient":          ["Clean Label"],
+
+  // ── Plant-based & Sustainability ─────────────────────────────────────
+  "plant-based":         ["Natural", "Sustainability", "Clean Label"],
+  "vegan":               ["Natural", "Sustainability"],
+  "gluten-free":         ["Clean Label"],
+  "eco-friendly":        ["Sustainability"],
+  "eco":                 ["Sustainability"],
+  "recyclable":          ["Sustainability"],
+  "locally sourced":     ["Sustainability", "Natural"],
+  "sustainable":         ["Sustainability"],
+
+  // ── Gut & Digestive ──────────────────────────────────────────────────
+  "gut-friendly":        ["Gut Health"],
+  "gut health":          ["Gut Health"],
+  "gut":                 ["Gut Health"],
+  "probiotic":           ["Gut Health"],
+  "prebiotic":           ["Gut Health"],
+  "high-fibre":          ["Gut Health", "Weight Loss"],
+  "digestive support":   ["Gut Health"],
+  "digestive":           ["Gut Health"],
+
+  // ── Weight & Metabolism ──────────────────────────────────────────────
+  "low-calorie":         ["Weight Loss"],
+  "keto-friendly":       ["Weight Loss", "Clean Label"],
+  "low-carb":            ["Weight Loss"],
+  "fat-burning":         ["Weight Loss", "Energy"],
+  "metabolism boost":    ["Weight Loss", "Energy"],
+  "metabolism":          ["Weight Loss", "Energy"],
+  "weight":              ["Weight Loss"],
+
+  // ── Energy & Mental ──────────────────────────────────────────────────
+  "energy boost":        ["Energy"],
+  "energy":              ["Energy"],
+  "slow-release energy": ["Energy"],
+  "caffeine-free":       ["Natural", "Energy"],
+  "caffeine":            ["Energy"],
+  "electrolyte":         ["Hydration", "Energy"],
+  "focus":               ["Mental Clarity", "Energy"],
+  "nootropic":           ["Mental Clarity"],
+  "stress relief":       ["Mental Clarity"],
+  "mental":              ["Mental Clarity"],
+
+  // ── Immunity & Wellness ──────────────────────────────────────────────
+  "immunity support":    ["Immunity"],
+  "immunity":            ["Immunity"],
+  "immune":              ["Immunity"],
+  "vitamin-rich":        ["Immunity"],
+  "vitamin":             ["Immunity"],
+  "antioxidant":         ["Immunity", "Natural"],
+  "zinc":                ["Immunity"],
+  "adaptogen":           ["Immunity", "Mental Clarity"],
+  "clinically proven":   ["Immunity", "Clean Label"],
+
+  // ── Convenience ──────────────────────────────────────────────────────
+  "ready-to-drink":      ["Convenience"],
+  "on-the-go":           ["Convenience"],
+  "no prep":             ["Convenience"],
+  "kid-friendly":        ["Convenience"],
+  "quick dissolve":      ["Convenience"],
+  "convenient":          ["Convenience"],
+
+  // ── Hydration ────────────────────────────────────────────────────────
+  "hydration":           ["Hydration"],
+  "hydrat":              ["Hydration"],
+  "coconut water":       ["Hydration", "Natural"],
+
+  // ── Taste & Indulgence ───────────────────────────────────────────────
+  "great taste":         ["Taste"],
+  "indulgent":           ["Taste"],
+  "no chalky":           ["Taste"],
+  "dessert":             ["Taste"],
+  "flavour":             ["Taste"],
+  "flavor":              ["Taste"],
+  "taste":               ["Taste"],
+
+  // ── Price & Value ────────────────────────────────────────────────────
+  "affordable":          ["Price Value"],
+  "value for money":     ["Price Value"],
+  "budget-friendly":     ["Price Value"],
+  "premium pricing":     ["Clean Label"],
+  "premium":             ["Clean Label"],
 };
+
+// Backwards-compat helper: returns first benefit (for single-benefit contexts)
+const claimToBenefitMap = Object.fromEntries(
+  Object.entries(claimToBenefitsMap).map(([k, v]) => [k, v[0]])
+);
 
 // ── Derive consumer needs from persona attributes ───────────────────────────
 const LIFESTYLE_TO_NEEDS = {
@@ -80,12 +166,73 @@ const PURCHASE_TO_NEEDS = {
   "Brand-loyal repeater":        [],
 };
 
+// ── Whitespace copy recommendations ────────────────────────────────────────
+const WHITESPACE_COPY = {
+  "Gut Health": {
+    ingredient: "Prebiotic oat beta-glucan at 3g per serve \u2014 clinically linked to gut lining support, unclaimed in RTD format in this category",
+    format: "Ready-to-drink, chilled format, morning occasion",
+    framings: ["Built for your gut. Ready in 60s.", "Protein that works from the inside out.", "Not just clean. Actually functional."],
+  },
+  "Convenience": {
+    ingredient: "Single-serve, no-mix oat protein base \u2014 full nutrition in a grab-and-go format",
+    format: "Tetra pak or chilled bottle, 200ml, priced for daily use",
+    framings: ["No prep. No compromise.", "Your 20-minute morning sorted.", "Fast breakfast. Real nutrition."],
+  },
+  "Energy": {
+    ingredient: "Natural caffeine from green tea extract + oat slow-release carbs \u2014 sustained energy without crash",
+    format: "250ml functional RTD, morning or pre-work occasion",
+    framings: ["Steady energy. No crash.", "Fuel that lasts till lunch.", "Not a shot. A meal."],
+  },
+  "Recovery": {
+    ingredient: "Oat protein + electrolyte blend \u2014 muscle recovery without artificial additives",
+    format: "Post-workout RTD, 330ml, gym and sports retail channel",
+    framings: ["Recover clean.", "Real protein. Real recovery.", "No whey. No problem."],
+  },
+  "Weight Loss": {
+    ingredient: "High-fibre oat protein \u2014 satiety-first formulation, low glycaemic index",
+    format: "Meal replacement format, 300\u2013400 kcal, breakfast or lunch occasion",
+    framings: ["Full for longer. Lighter over time.", "Protein that manages hunger.", "Clean calories that count."],
+  },
+  "Immunity": {
+    ingredient: "Vitamin C + Zinc + oat beta-glucan \u2014 natural immune stack, no synthetic fortification",
+    format: "Daily functional shot or RTD, 100\u2013150ml, morning ritual",
+    framings: ["Immunity you can taste.", "Built in. Not bolted on.", "Your daily defence. Under \u20B960."],
+  },
+  "Natural": {
+    ingredient: "Whole grain oat base, no isolates, no artificial sweeteners \u2014 clean label from field to bottle",
+    format: "Transparent packaging showing real ingredients, no-nonsense label design",
+    framings: ["You can read every ingredient.", "Nothing you can\u2019t pronounce.", "Real food. Liquid form."],
+  },
+  "Sustainability": {
+    ingredient: "Oat farming has 80% lower carbon footprint than dairy \u2014 lead with provenance",
+    format: "Compostable or recyclable packaging, local sourcing callout",
+    framings: ["Better for you. Easier on the planet.", "Low footprint protein.", "Grown here. Made here."],
+  },
+  "default": {
+    ingredient: "Oat-based functional formulation \u2014 leverage whole grain credibility in an unclaimed benefit space",
+    format: "RTD or sachet format, daily habit occasion",
+    framings: ["Simple. Functional. Yours.", "The gap your competitors missed.", "Clean protein in a new space."],
+  },
+};
+
+// ── Persona pain point lookup for resonance copy ───────────────────────────
+const PERSONA_PAIN_POINTS = {
+  "Time-Starved":       "no time for complicated nutrition",
+  "Fitness Conscious":  "performance without artificial shortcuts",
+  "Wellness-Driven":    "ingredients you can actually trust",
+  "Eco-Aware":          "products that don\u2019t cost the planet",
+  "Budget-Minded":      "real nutrition at a real price",
+  "Premium Seeker":     "quality that justifies the price",
+  "Convenience-First":  "nutrition that fits into real life",
+  "Family-Oriented":    "something the whole family can trust",
+};
+
 // Need → benefit row mapping (for heatmap boosting)
 const NEED_TO_BENEFIT = {
   "Sports Performance": ["Protein", "Recovery", "Energy"],
   "Energy":             ["Energy"],
   "Weight Management":  ["Weight Loss", "Protein"],
-  "Gut Health":         ["Gut Health", "Digestive Health"],
+  "Gut Health":         ["Gut Health"],
   "Immunity":           ["Immunity"],
   "Sleep":              ["Mental Clarity"],
   "Sustainability":     ["Sustainability"],
@@ -132,16 +279,32 @@ function compClaimsList(comp) {
 // Adjust these ranges to control the shape of scores. All values 0-100.
 // claimed:   [min, max] when the brand actively makes this claim
 // unclaimed: [min, max] when the brand doesn't mention this benefit
-// ── NEW SMARTER DATA DISTRIBUTION CONFIG ───────────────────────────────────
-// Dictates the probability of claims falling into sparse buckets.
-// This distributes the 15 rows cleanly into a few reds, a few greens, and scattered ambers.
-const MARKET_POSITION_PROFILES = {
-  "Category Leader": { highProb: 0.35, lowProb: 0.15 }, // ~5 Red, ~2 Green, remaining Amber
-  "Challenger":      { highProb: 0.15, lowProb: 0.25 }, // ~2 Red, ~4 Green, remaining Amber
-  "Niche Player":    { highProb: 0.05, lowProb: 0.55 }, // ~1 Red, ~8 Green, remaining Amber
+const MARKET_POSITION_PRIORITY = {
+  "Category Leader": { active: [72, 95], passive_adjacent: [35, 62], passive_distant: [18, 40] },
+  "Challenger":      { active: [50, 74], passive_adjacent: [22, 45], passive_distant: [8,  28] },
+  "Niche Player":    { active: [32, 58], passive_adjacent: [10, 28], passive_distant: [4,  18] },
 };
 
-// Claim-strength modifier: how much a specific claim type skews toward the top
+// Which benefit categories bleed into each other for passive scoring
+const SCORING_ADJACENCY = {
+  "Protein":        ["Recovery", "Energy", "Weight Loss", "Gut Health"],
+  "Natural":        ["Clean Label", "Gut Health", "Sustainability", "Immunity", "Weight Loss"],
+  "Gut Health":     ["Natural", "Immunity", "Clean Label", "Weight Loss"],
+  "Clean Label":    ["Natural", "Sustainability", "Gut Health", "Immunity"],
+  "Energy":         ["Recovery", "Protein", "Mental Clarity", "Convenience", "Weight Loss"],
+  "Recovery":       ["Protein", "Energy"],
+  "Weight Loss":    ["Protein", "Energy", "Natural", "Gut Health"],
+  "Immunity":       ["Gut Health", "Natural", "Clean Label"],
+  "Convenience":    ["Energy", "Taste"],
+  "Sustainability": ["Natural", "Clean Label"],
+  "Taste":          ["Convenience", "Natural"],
+  "Mental Clarity": ["Energy", "Immunity"],
+  "Hydration":      ["Energy", "Natural", "Recovery"],
+  "Price Value":    ["Convenience"],
+};
+
+// Claim-strength modifier: how much a specific claim type skews toward the
+// top of the range. 1.0 = full top, 0.0 = full bottom, 0.5 = midpoint.
 const CLAIM_STRENGTH = {
   "high-protein":      0.85,
   "protein":           0.80,
@@ -161,10 +324,11 @@ const CLAIM_STRENGTH = {
   "hydration":         0.65,
   "energy":            0.65,
   "complete nutrition":0.75,
-  "default":           0.50,
+  "default":           0.50, // unknown claim → midpoint
 };
 
-// Known market positions for brands
+// Known market positions for brands. Add any brand here to give it a position.
+// Brands not listed default to "Challenger".
 const KNOWN_MARKET_POSITIONS = {
   "MuscleBlaze":    "Category Leader",
   "Oziva":          "Challenger",
@@ -179,7 +343,7 @@ const KNOWN_MARKET_POSITIONS = {
   "Mojo":           "Challenger",
 };
 
-// Seeded pseudo-random: stable UI, but chaotic enough to create pattern variance
+// Seeded pseudo-random: same brand+benefit always gives same score (stable UI)
 function seededRandom(seed) {
   let x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
@@ -189,48 +353,245 @@ function strToSeed(str) {
   return str.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
 }
 
-function scoredValue(brandName, benefit, hasClaim, claimKey) {
-  const mp = KNOWN_MARKET_POSITIONS[brandName] || "Challenger";
-  const profile = MARKET_POSITION_PROFILES[mp];
-  
-  // Appending 'v3' ensures the seed calculates fresh, non-uniform distributions
-  const rand = seededRandom(strToSeed(brandName + benefit + "v3"));
+function scoredValue(brandName, benefit, hasClaim, claimKey, marketPosition, claimedBenefits) {
+  const mp = marketPosition || KNOWN_MARKET_POSITIONS[brandName] || "Challenger";
+  const priority = MARKET_POSITION_PRIORITY[mp] || MARKET_POSITION_PRIORITY["Challenger"];
 
-  // 1. Explicit Key Claims (Always prominently ranked high)
+  let lo, hi;
   if (hasClaim) {
-    const strength = CLAIM_STRENGTH[claimKey] ?? CLAIM_STRENGTH["default"];
-    const baseScore = 75 + Math.floor(rand * 15); // 75-90 base
-    return Math.min(98, Math.round(baseScore + (strength * 7)));
+    [lo, hi] = priority.active;
+  } else {
+    // Check if any of the brand's claimed benefits are adjacent to this one
+    const isAdjacent = (claimedBenefits || []).some(
+      (cb) => (SCORING_ADJACENCY[cb] || []).includes(benefit)
+    );
+    [lo, hi] = isAdjacent ? priority.passive_adjacent : priority.passive_distant;
   }
 
-  // 2. Background/Implied Claims (Creating sparse breakdown: Reds, Greens, Ambers)
-  if (rand < profile.highProb) {
-    // Saturated Tier (Red)
-    return Math.floor(76 + rand * 14); // 76 - 90
-  } else if (rand > (1 - profile.lowProb)) {
-    // Whitespace/Minimal Tier (Teal/Green)
-    return Math.floor(0 + rand * 30); // 0 - 30 (Allows clean 0s / Whitespaces to appear)
-  } else {
-    // Competitive Tier (Amber/Yellow)
-    return Math.floor(42 + rand * 22); // 42 - 64
-  }
+  const strength = hasClaim
+    ? (CLAIM_STRENGTH[claimKey] ?? CLAIM_STRENGTH["default"])
+    : 0.5;
+
+  const rand = seededRandom(strToSeed(brandName + benefit));
+  const skewed = lo + (hi - lo) * (strength * 0.6 + rand * 0.4);
+  return Math.round(Math.max(lo, Math.min(hi, skewed)));
 }
 
-function getCompScores(competitor) {
+function getCompScores(competitor, rows) {
   const claims = compClaimsList(competitor);
+
+  // Build benefit → claim key map (active claims only)
+  const benefitToClaimKey = {};
+  claims.forEach((claim) => {
+    Object.entries(claimToBenefitsMap).forEach(([key, benefits]) => {
+      if (claim.includes(key)) {
+        benefits.forEach((benefit) => {
+          if (!benefitToClaimKey[benefit]) benefitToClaimKey[benefit] = key;
+        });
+      }
+    });
+  });
+
+  // All benefits this competitor actively claims — used for passive adjacency
+  const claimedBenefits = Object.keys(benefitToClaimKey);
+
   const scores = {};
-  BENEFIT_ROWS.forEach((benefit) => {
-    let matchedClaimKey = null;
-    for (const claim of claims) {
-      const entry = Object.entries(claimToBenefitMap).find(
-        ([key, b]) => b === benefit && claim.includes(key)
-      );
-      if (entry) { matchedClaimKey = entry[0]; break; }
-    }
+  rows.forEach((benefit) => {
+    const matchedClaimKey = benefitToClaimKey[benefit] ?? null;
     const hasClaim = matchedClaimKey !== null;
-    scores[benefit] = scoredValue(competitor.name, benefit, hasClaim, matchedClaimKey);
+    scores[benefit] = scoredValue(
+      competitor.name, benefit, hasClaim, matchedClaimKey,
+      competitor.marketPosition, claimedBenefits
+    );
   });
   return scores;
+}
+
+// ── Whitespace opportunity engine ─────────────────────────────────────────
+function computeWhitespaceOpportunities(heatmapValues, dynamicRows, competitors, keyClaims, personas, derivedNeeds) {
+  const wsRows = dynamicRows.filter(row =>
+    competitors.every(c => (heatmapValues[row]?.[c.name] ?? 0) < 40)
+  );
+  if (wsRows.length === 0) return null;
+
+  const scored = wsRows.map(row => {
+    const compScores = competitors.map(c => heatmapValues[row]?.[c.name] ?? 0);
+    const maxComp = Math.max(...compScores, 0);
+    const whitespaceGap = maxComp === 0 ? 100 : Math.round(((40 - maxComp) / 40) * 100);
+
+    const needIdx = derivedNeeds.indexOf(row);
+    const personaWeight = needIdx === -1 ? 20
+      : needIdx === 0 ? 100
+      : needIdx === 1 ? 85
+      : needIdx === 2 ? 70
+      : needIdx === 3 ? 55
+      : 40;
+
+    const claimsMapToRow = keyClaims.some(kc => {
+      const lc = kc.toLowerCase().trim();
+      return Object.entries(claimToBenefitsMap).some(([key, benefits]) =>
+        lc.includes(key) && benefits.includes(row)
+      );
+    });
+    const adjacentBenefits = SCORING_ADJACENCY[row] || [];
+    const claimsMapAdjacent = !claimsMapToRow && keyClaims.some(kc => {
+      const lc = kc.toLowerCase().trim();
+      return Object.entries(claimToBenefitsMap).some(([key, benefits]) =>
+        lc.includes(key) && benefits.some(b => adjacentBenefits.includes(b))
+      );
+    });
+    const claimCredibility = claimsMapToRow ? 100 : claimsMapAdjacent ? 60 : 20;
+
+    const opportunityScore = Math.round(whitespaceGap * 0.5 + personaWeight * 0.3 + claimCredibility * 0.2);
+    const type = compScores.every(s => s < 25) ? "virgin" : "abandoned";
+    const confidence = opportunityScore >= 70 ? "high" : opportunityScore >= 45 ? "medium" : "speculative";
+
+    const adjacent = (SCORING_ADJACENCY[row] || [])
+      .map(adjRow => ({
+        claim: adjRow,
+        score: Math.max(...competitors.map(c => heatmapValues[adjRow]?.[c.name] ?? 0))
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 2);
+
+    const copy = WHITESPACE_COPY[row] || WHITESPACE_COPY["default"];
+
+    const fitByPersona = personas.map(persona => {
+      const pNeeds = deriveConsumerNeeds([persona]);
+      const pIdx = pNeeds.indexOf(row);
+      const needScore = pIdx === -1 ? 20
+        : pIdx === 0 ? 95
+        : pIdx === 1 ? 80
+        : pIdx === 2 ? 65
+        : 50;
+      return Math.round(needScore * 0.6 + opportunityScore * 0.4);
+    });
+
+    return { row, opportunityScore, type, confidence, adjacent, copy, fitByPersona };
+  });
+
+  scored.sort((a, b) => b.opportunityScore - a.opportunityScore);
+
+  const buildCard = (sr) => ({
+    zone: sr.row,
+    type: sr.type,
+    confidence: sr.confidence,
+    fit: sr.opportunityScore,
+    fitByPersona: sr.fitByPersona,
+    adjacentClaims: sr.adjacent,
+    ingredient: sr.copy.ingredient,
+    format: sr.copy.format,
+    claimFramings: sr.copy.framings,
+  });
+
+  const cards = [buildCard(scored[0])];
+
+  if (scored.length >= 2) {
+    const top = scored[0], combo = scored[1];
+    const avgScore = Math.round((top.opportunityScore + combo.opportunityScore) / 2);
+    const combinedScore = Math.min(95, Math.round(avgScore * 1.1));
+    const combinedType = top.type === "virgin" && combo.type === "virgin" ? "virgin" : "abandoned";
+    const combinedConfidence = combinedScore >= 70 ? "high" : combinedScore >= 45 ? "medium" : "speculative";
+    const combinedCopy = WHITESPACE_COPY[top.row] || WHITESPACE_COPY["default"];
+    const combinedAdjacent = [...top.adjacent, ...combo.adjacent]
+      .filter((a, i, arr) => arr.findIndex(x => x.claim === a.claim) === i)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 2);
+    const combinedFitByPersona = personas.map((_, pi) => {
+      const topFit = top.fitByPersona[pi] || 50;
+      const comboFit = combo.fitByPersona[pi] || 50;
+      return Math.min(95, Math.round((topFit + comboFit) / 2 + 5));
+    });
+
+    cards.push({
+      zone: top.row + " \u00d7 " + combo.row,
+      type: combinedType,
+      confidence: combinedConfidence,
+      fit: combinedScore,
+      fitByPersona: combinedFitByPersona,
+      adjacentClaims: combinedAdjacent,
+      ingredient: combinedCopy.ingredient,
+      format: combinedCopy.format,
+      claimFramings: combinedCopy.framings,
+    });
+  }
+
+  if (scored.length >= 3) cards.push(buildCard(scored[2]));
+  return cards;
+}
+
+// ── Consumer Resonance engine ──────────────────────────────────────────────
+function computeResonance(keyClaims, competitors, heatmapValues, dynamicRows, persona) {
+  const tags = persona.lifestyle_tags || [];
+  const painPoint = tags.map(t => PERSONA_PAIN_POINTS[t]).filter(Boolean)[0] || "nutrition that works for you";
+  const topClaim = keyClaims[0] || "";
+  const topClaimBenefit = (() => {
+    const lc = topClaim.toLowerCase().trim();
+    for (const [key, benefits] of Object.entries(claimToBenefitsMap)) {
+      if (lc.includes(key)) return benefits[0];
+    }
+    return "";
+  })();
+  const secondClaim = keyClaims[1] || "";
+  const secondClaimBenefit = (() => {
+    const lc = secondClaim.toLowerCase().trim();
+    for (const [key, benefits] of Object.entries(claimToBenefitsMap)) {
+      if (lc.includes(key)) return benefits[0];
+    }
+    return "";
+  })();
+
+  const wsRows = dynamicRows.filter(row =>
+    competitors.every(c => (heatmapValues[row]?.[c.name] ?? 0) < 40)
+  );
+  const wsScores = wsRows.map(row => ({
+    row,
+    maxComp: Math.max(...competitors.map(c => heatmapValues[row]?.[c.name] ?? 0)),
+  })).sort((a, b) => a.maxComp - b.maxComp);
+  const topWsRow = wsScores[0]?.row || "";
+
+  const personaNeeds = deriveConsumerNeeds([persona]);
+  const topNeed = personaNeeds[0] || "";
+
+  const pos1Claim = topClaimBenefit || topClaim;
+  const pos1 = { positioning: pos1Claim + " that fits your " + (topNeed.toLowerCase() || "lifestyle") };
+
+  const pos2 = {
+    positioning: topWsRow
+      ? topWsRow + " protein \u2014 the gap every big brand missed"
+      : (topClaimBenefit || "Real nutrition") + " \u2014 " + painPoint,
+  };
+
+  const pos3 = {
+    positioning: secondClaim
+      ? (topClaimBenefit || topClaim) + ". " + (secondClaimBenefit || secondClaim) + ". No compromise."
+      : (topClaimBenefit || topClaim) + " \u2014 " + painPoint,
+  };
+
+  const result = [pos1, pos2, pos3].map((p, i) => {
+    const posLower = p.positioning.toLowerCase();
+    const claimFit = keyClaims.some(kc => posLower.includes(kc.toLowerCase().trim().substring(0, 8))) ? 90 : 65;
+    const benefitInPos = dynamicRows.find(r => posLower.includes(r.toLowerCase().trim().substring(0, 6)));
+    const maxCompForBenefit = benefitInPos
+      ? Math.max(...competitors.map(c => heatmapValues[benefitInPos]?.[c.name] ?? 0))
+      : 50;
+    const whitespaceBonus = benefitInPos && maxCompForBenefit < 40 ? 100
+      : benefitInPos && maxCompForBenefit <= 65 ? 60
+      : 20;
+
+    let tagMatchScore = 0;
+    tags.forEach(tag => {
+      if (posLower.includes(tag.toLowerCase().substring(0, 5))) tagMatchScore = Math.min(100, tagMatchScore + 25);
+    });
+    personaNeeds.forEach(need => {
+      if (posLower.includes(need.toLowerCase().substring(0, 6))) tagMatchScore = Math.min(100, tagMatchScore + 25);
+    });
+
+    const resonanceScore = Math.round(claimFit * 0.4 + whitespaceBonus * 0.3 + tagMatchScore * 0.3);
+    const risk = resonanceScore >= 70 ? "low" : resonanceScore >= 50 ? "medium" : "high";
+    return { rank: i + 1, positioning: p.positioning, score: resonanceScore, risk };
+  });
+  return result;
 }
 
 function cellColor(v) {
@@ -467,8 +828,9 @@ function TabBar({ personas, activeId, onSelect }) {
   );
 }
 
-function ResonanceList({ personas, activeResonanceId, onResonanceTab }) {
-  const resonanceData = RESONANCE_BY_PERSONA[activeResonanceId] || RESONANCE_BY_PERSONA["persona_1"];
+function ResonanceList({ personas, activeResonanceId, onResonanceTab, computedResonance }) {
+  const resonanceData = (computedResonance || RESONANCE_BY_PERSONA)[activeResonanceId]
+    || (computedResonance || RESONANCE_BY_PERSONA)[Object.keys(computedResonance || RESONANCE_BY_PERSONA)[0]];
   const activePersona = personas.find((p) => p.id === activeResonanceId) || personas[0];
   const personaName = activePersona?.persona_name || `Persona ${personas.indexOf(activePersona) + 1}`;
 
@@ -639,41 +1001,110 @@ export default function Step3Whitespace({ onNext, keyClaims = [], competitors = 
     ? HEATMAP_DATA.cols
     : [...competitors.map((c) => c.name), "Your Product"];
 
-  const heatmapRows = useFallback ? HEATMAP_DATA.rows : BENEFIT_ROWS;
-
   // Derive consumer needs from all personas
   const derivedNeeds = deriveConsumerNeeds(personas);
+
+  // ── Build dynamic rows from user's claims + persona-derived needs ──────────
+  const dynamicRows = useMemo(() => {
+    if (useFallback) return HEATMAP_DATA.rows;
+    const seen = new Set();
+    const rows = [];
+    const add = (row) => { if (row && !seen.has(row)) { seen.add(row); rows.push(row); } };
+
+    // 1. Key claims — map each to benefit rows via claimToBenefitsMap
+    // Use ONLY lc.includes(key) — no key.includes(lc) to prevent over-matching
+    // If a claim has no mapping, SKIP IT (do not add as a raw row)
+    keyClaims.forEach((claim) => {
+      const lc = claim.toLowerCase().trim();
+      Object.entries(claimToBenefitsMap).forEach(([key, benefits]) => {
+        if (lc.includes(key)) {
+          benefits.forEach(add);
+        }
+      });
+    });
+
+    // 2. Persona-derived needs — cap at 5 to prevent flooding
+    derivedNeeds.slice(0, 5).forEach((need) => {
+      (NEED_TO_BENEFIT[need] || []).forEach(add);
+    });
+
+    return rows;
+  }, [useFallback, keyClaims, derivedNeeds]);
+
+  const heatmapRows = dynamicRows;
 
   const heatmapValues = useFallback
     ? HEATMAP_DATA.values
     : (() => {
         const vals = {};
-        BENEFIT_ROWS.forEach((benefit) => {
+        dynamicRows.forEach((benefit) => {
           vals[benefit] = {};
           competitors.forEach((comp) => {
-            const scores = getCompScores(comp);
+            const scores = getCompScores(comp, dynamicRows);
             vals[benefit][comp.name] = scores[benefit] ?? 20;
           });
-          // Derive which benefits the user is actually claiming via claimToBenefitMap fuzzy matching
-          // How many of the user's key claims map to this benefit
-          const matchingClaims = keyClaims.filter((kc) => {
-            const lcKc = kc.toLowerCase().trim();
-            return Object.entries(claimToBenefitMap).some(([key, mappedBenefit]) =>
-              mappedBenefit === benefit && lcKc.includes(key)
-            );
+          // Score Your Product using the same scoredValue() as competitors
+          // Build claimedBenefits from the user's key claims
+          const yourClaimedBenefits = [];
+          keyClaims.forEach((kc) => {
+            const lc = kc.toLowerCase().trim();
+            Object.entries(claimToBenefitsMap).forEach(([key, b]) => {
+              if (lc.includes(key)) yourClaimedBenefits.push(...b);
+            });
           });
-          // Base score from key claims: 0 if none, scales with count
-          const claimCount = matchingClaims.length;
-          let yourScore = 0;
-          if (claimCount === 1) yourScore = 65;
-          else if (claimCount === 2) yourScore = 80;
-          else if (claimCount >= 3) yourScore = 90;
-          // Boost from persona-derived needs: if a derived need maps to this benefit
-          // and user hasn't explicitly claimed it, show as a lower-strength signal (40)
-          const needBenefits = derivedNeeds.flatMap((n) => NEED_TO_BENEFIT[n] || []);
-          if (yourScore === 0 && needBenefits.includes(benefit)) {
-            yourScore = 40; // persona signals this matters, but no explicit claim yet
+          // Deduplicate
+          const yourUniqueBenefits = [...new Set(yourClaimedBenefits)];
+
+          // Find the matching claim key for this benefit (if any)
+          let yourClaimKey = null;
+          for (const kc of keyClaims) {
+            const lc = kc.toLowerCase().trim();
+            for (const [key, mappedBenefits] of Object.entries(claimToBenefitsMap)) {
+              if (lc.includes(key) && mappedBenefits.includes(benefit)) {
+                yourClaimKey = key;
+                break;
+              }
+            }
+            if (yourClaimKey) break;
           }
+
+          const hasYourClaim = yourClaimKey !== null;
+          const yourProductNeeds = derivedNeeds.flatMap((n) => NEED_TO_BENEFIT[n] || []);
+          let yourScore;
+
+          if (hasYourClaim) {
+            // Active claim → use scoredValue with the matched claim key
+            yourScore = scoredValue(
+              "Your Product", benefit, true, yourClaimKey,
+              "Challenger", yourUniqueBenefits
+            );
+          } else if (yourProductNeeds.includes(benefit)) {
+            // No direct claim, but persona needs it → moderate signal
+            // Check if any claimed benefit is adjacent
+            const isAdjacent = yourUniqueBenefits.some(
+              (cb) => (SCORING_ADJACENCY[cb] || []).includes(benefit)
+            );
+            if (isAdjacent) {
+              yourScore = scoredValue(
+                "Your Product", benefit, false, null,
+                "Challenger", yourUniqueBenefits
+              );
+            } else {
+              // Persona wants it but no adjacency → lower capped signal
+              const needIdx = derivedNeeds.indexOf(
+                derivedNeeds.find((n) => (NEED_TO_BENEFIT[n] || []).includes(benefit))
+              );
+              const needStrength = needIdx === -1 ? 25
+                : needIdx === 0 ? 55
+                : needIdx === 1 ? 45
+                : needIdx === 2 ? 38
+                : 30;
+              yourScore = needStrength;
+            }
+          } else {
+            yourScore = 0;
+          }
+
           vals[benefit]["Your Product"] = yourScore;
         });
         return vals;
@@ -681,8 +1112,9 @@ export default function Step3Whitespace({ onNext, keyClaims = [], competitors = 
 
   const userBenefits = new Set();
   keyClaims.forEach((c) => {
-    Object.entries(claimToBenefitMap).forEach(([key, benefit]) => {
-      if (c.toLowerCase().includes(key)) userBenefits.add(benefit);
+    const lc = c.toLowerCase().trim();
+    Object.entries(claimToBenefitsMap).forEach(([key, benefits]) => {
+      if (lc.includes(key)) benefits.forEach(b => userBenefits.add(b));
     });
   });
 
@@ -702,26 +1134,27 @@ export default function Step3Whitespace({ onNext, keyClaims = [], competitors = 
     });
   }
 
-  const whitespaceRows = !useFallback
-    ? heatmapRows.filter((row) => {
-        const scores = competitors.map((c) => heatmapValues[row]?.[c.name] ?? 0);
-        return scores.every((v) => v < 40);
-      })
-    : [];
+  const dynamicZones = useMemo(() => {
+    if (useFallback) return null;
+    return computeWhitespaceOpportunities(
+      heatmapValues, dynamicRows, competitors, keyClaims, personas, derivedNeeds
+    );
+  }, [useFallback, heatmapValues, dynamicRows, competitors, keyClaims, personas, derivedNeeds]);
 
-  const dynamicZones = !useFallback && whitespaceRows.length >= 2
-    ? [
-        { ...WHITESPACE_OPPORTUNITIES[0], zone: whitespaceRows[0] + " \u00d7 " + whitespaceRows[1], fit: 65, fitByPersona: [65, 60, 55, 50] },
-        { ...WHITESPACE_OPPORTUNITIES[1], zone: whitespaceRows.length > 2 ? whitespaceRows[1] + " \u00d7 " + whitespaceRows[2] : whitespaceRows[0] + " \u00d7 " + whitespaceRows[1], fit: 55, fitByPersona: [55, 50, 45, 40] },
-        { ...WHITESPACE_OPPORTUNITIES[2], zone: whitespaceRows[0] + " \u00d7 " + (whitespaceRows[2] || whitespaceRows[1]), fit: 60, fitByPersona: [60, 55, 50, 45] },
-      ]
-    : null;
+  const computedResonance = useMemo(() => {
+    if (useFallback) return RESONANCE_BY_PERSONA;
+    const result = {};
+    personas.forEach((persona) => {
+      result[persona.id] = computeResonance(keyClaims, competitors, heatmapValues, dynamicRows, persona);
+    });
+    return result;
+  }, [useFallback, keyClaims, competitors, heatmapValues, dynamicRows, personas]);
 
   const topClaimants = useFallback
     ? HEATMAP_DATA.topClaimants
     : (() => {
         const map = {};
-        BENEFIT_ROWS.forEach((row) => {
+        dynamicRows.forEach((row) => {
           let top = null;
           let topScore = -1;
           competitors.forEach((c) => {
@@ -807,6 +1240,7 @@ export default function Step3Whitespace({ onNext, keyClaims = [], competitors = 
             personas={personas}
             activeResonanceId={activeResonanceId}
             onResonanceTab={setActiveResonanceId}
+            computedResonance={computedResonance}
           />
         </div>
       </div>

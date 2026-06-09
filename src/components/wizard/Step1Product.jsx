@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowRight, Loader2, Plus, X, Pencil } from "lucide-react";
+import { ArrowRight, Loader2, Plus, X, Pencil, Trash2 } from "lucide-react";
 import Chip from "../shared/Chip";
 import { CATEGORIES, MARKETS, PREDEFINED_CLAIMS } from "../../data/demoData";
 
@@ -24,41 +24,149 @@ function Field({ label, children, hint }) {
 const inputCls =
   "w-full bg-bg-primary border border-border-color rounded-md px-3 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/60 focus:border-accent-amber transition-colors";
 
-function CompetitorCard({ comp, editable, onUpdate }) {
+const POSITIONS = ["Category Leader", "Challenger", "Niche Player"];
+
+function CompetitorCard({ comp, editable, onUpdate, onRemove, isLast }) {
+  const [snapshot] = useState({ ...comp, claims: [...(comp.claims || [])] });
+
   const [localName, setLocalName] = useState(comp.name);
-  const [localClaims, setLocalClaims] = useState(Array.isArray(comp.claims) ? comp.claims.join(", ") : (comp.claims || ""));
+  const [localClaims, setLocalClaims] = useState(
+    Array.isArray(comp.claims) ? [...comp.claims] : []
+  );
+  const [localPosition, setLocalPosition] = useState(comp.marketPosition);
+  const [claimInput, setClaimInput] = useState("");
+
+  const addClaim = () => {
+    const val = claimInput.trim();
+    if (!val || localClaims.includes(val)) return;
+    setLocalClaims([...localClaims, val]);
+    setClaimInput("");
+  };
+
+  const removeClaim = (cl) => setLocalClaims(localClaims.filter((c) => c !== cl));
+
+  const handleSave = () => {
+    if (!localName.trim()) return;
+    onUpdate({
+      ...comp,
+      name: localName.trim(),
+      claims: localClaims,
+      marketPosition: localPosition,
+    });
+  };
+
+  const handleCancel = () => {
+    setLocalName(snapshot.name);
+    setLocalClaims([...snapshot.claims]);
+    setLocalPosition(snapshot.marketPosition);
+    onUpdate(snapshot);
+  };
 
   if (editable) {
     return (
-      <div className="bg-bg-surface border border-border rounded-lg p-3 flex flex-col gap-2">
+      <div className="bg-bg-surface border border-accent-amber/40 rounded-lg p-3 flex flex-col gap-3">
+
+        {!isLast && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={onRemove}
+              className="text-text-secondary hover:text-red-400 transition-colors"
+              title="Remove competitor"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        )}
+
         <input
-          className="w-full bg-bg-primary border border-border rounded px-2 py-1.5 text-sm text-text-primary placeholder:text-text-secondary/60 focus:border-accent-amber transition-colors"
+          className="w-full bg-bg-primary border border-border-color rounded px-2 py-1.5 text-sm text-text-primary placeholder:text-text-secondary/60 focus:border-accent-amber transition-colors"
           value={localName}
           onChange={(e) => setLocalName(e.target.value)}
           placeholder="Brand name"
         />
-        <input
-          className="w-full bg-bg-primary border border-border rounded px-2 py-1.5 text-sm text-text-primary placeholder:text-text-secondary/60 focus:border-accent-amber transition-colors"
-          value={localClaims}
-          onChange={(e) => setLocalClaims(e.target.value)}
-          placeholder="Claims (comma-separated)"
-        />
-        <select
-          className="w-full bg-bg-primary border border-border rounded px-2 py-1.5 text-sm text-text-primary focus:border-accent-amber transition-colors"
-          value={comp.marketPosition}
-          onChange={(e) => onUpdate({ ...comp, marketPosition: e.target.value })}
-        >
-          <option value="Category Leader" className="bg-bg-primary">Category Leader</option>
-          <option value="Challenger" className="bg-bg-primary">Challenger</option>
-          <option value="Niche Player" className="bg-bg-primary">Niche Player</option>
-        </select>
-        <button
-          type="button"
-          onClick={() => onUpdate({ name: localName, category: comp.category, claims: localClaims.split(",").map((c) => c.trim()).filter(Boolean), marketPosition: comp.marketPosition })}
-          className="text-xs text-accent-amber hover:underline self-end"
-        >
-          Done
-        </button>
+
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-text-secondary mb-1.5">
+            Key Claims
+          </div>
+          <div className="flex flex-wrap gap-1.5 mb-2 min-h-[24px]">
+            {localClaims.map((cl) => (
+              <span
+                key={cl}
+                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-accent-amber/10 text-accent-amber border border-accent-amber/20"
+              >
+                {cl}
+                <button
+                  type="button"
+                  onClick={() => removeClaim(cl)}
+                  className="hover:text-red-400 transition-colors leading-none"
+                >
+                  <X size={9} />
+                </button>
+              </span>
+            ))}
+            {localClaims.length === 0 && (
+              <span className="text-[10px] text-text-secondary/50 italic">No claims yet</span>
+            )}
+          </div>
+          <div className="flex gap-1.5">
+            <input
+              className="flex-1 bg-bg-primary border border-border-color rounded px-2 py-1 text-[11px] text-text-primary placeholder:text-text-secondary/50 focus:border-accent-amber transition-colors"
+              value={claimInput}
+              onChange={(e) => setClaimInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addClaim(); } }}
+              placeholder="+ Add claim..."
+            />
+            <button
+              type="button"
+              onClick={addClaim}
+              className="text-[10px] px-2 py-1 rounded border border-accent-amber/40 text-accent-amber hover:bg-accent-amber/10 transition-colors whitespace-nowrap"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-text-secondary mb-1.5">
+            Market Position
+          </div>
+          <div className="flex gap-1.5 flex-wrap">
+            {POSITIONS.map((pos) => (
+              <button
+                key={pos}
+                type="button"
+                onClick={() => setLocalPosition(pos)}
+                className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
+                  localPosition === pos
+                    ? "bg-accent-amber text-bg-primary border-accent-amber font-semibold"
+                    : "text-accent-amber border-accent-amber/40 hover:bg-accent-amber/10"
+                }`}
+              >
+                {pos}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5 pt-1 border-t border-border-color">
+          <button
+            type="button"
+            onClick={handleSave}
+            className="w-full bg-accent-amber text-bg-primary text-xs font-semibold py-1.5 rounded hover:opacity-90 transition-opacity"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="w-full text-xs text-text-secondary hover:text-text-primary transition-colors py-1"
+          >
+            Cancel
+          </button>
+        </div>
+
       </div>
     );
   }
@@ -70,8 +178,10 @@ function CompetitorCard({ comp, editable, onUpdate }) {
       <div className="mb-2">
         <div className="text-[10px] uppercase tracking-wider text-text-secondary mb-1">Key Claims</div>
         <div className="flex flex-wrap gap-1">
-          {(Array.isArray(comp.claims) ? comp.claims : (comp.claims || "").split(",").map(c => c.trim()).filter(Boolean)).map((cl) => (
-            <span key={cl} className="text-[10px] px-1.5 py-0.5 rounded bg-accent-amber/10 text-accent-amber border border-accent-amber/20">{cl}</span>
+          {(Array.isArray(comp.claims) ? comp.claims : []).map((cl) => (
+            <span key={cl} className="text-[10px] px-1.5 py-0.5 rounded bg-accent-amber/10 text-accent-amber border border-accent-amber/20">
+              {cl}
+            </span>
           ))}
         </div>
       </div>
@@ -91,17 +201,27 @@ function CompetitorsBlock({ detected, onUpdateDetected, conceptDescription }) {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (conceptDescription?.length > 3) {
       timerRef.current = setTimeout(() => setVisible(true), 500);
-    } else {
-      setVisible(false);
-    }
+    } else { setVisible(false); }
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [conceptDescription, detected]);
+
+  const sync = (next) => { setCompetitors(next); onUpdateDetected(next); };
 
   const updateCompetitor = (i, comp) => {
     const next = [...competitors];
     next[i] = comp;
-    setCompetitors(next);
-    onUpdateDetected(next);
+    sync(next);
+  };
+
+  const removeCompetitor = (i) => {
+    if (competitors.length <= 1) return;
+    sync(competitors.filter((_, idx) => idx !== i));
+  };
+
+  const addCompetitor = () => {
+    const blank = { name: "", category: "", claims: [], marketPosition: "Challenger" };
+    sync([...competitors, blank]);
+    setEditing(true);
   };
 
   return (
@@ -124,9 +244,25 @@ function CompetitorsBlock({ detected, onUpdateDetected, conceptDescription }) {
         style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(-8px)" }}
       >
         {competitors.map((comp, i) => (
-          <CompetitorCard key={i} comp={comp} editable={editing} onUpdate={(c) => updateCompetitor(i, c)} />
+          <CompetitorCard
+            key={i}
+            comp={comp}
+            editable={editing}
+            onUpdate={(c) => updateCompetitor(i, c)}
+            onRemove={() => removeCompetitor(i)}
+            isLast={competitors.length === 1}
+          />
         ))}
       </div>
+      {editing && (
+        <button
+          type="button"
+          onClick={addCompetitor}
+          className="mt-3 flex items-center gap-1.5 text-xs text-accent-amber border border-accent-amber/30 px-3 py-1.5 rounded-md hover:bg-accent-amber/5 transition-colors"
+        >
+          <Plus size={12} /> Add Competitor
+        </button>
+      )}
     </div>
   );
 }

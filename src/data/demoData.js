@@ -10,7 +10,84 @@ export const CATEGORIES = [
 
 export const MARKETS = ["India", "USA", "UK", "SEA", "Global"];
 
-export const PREDEFINED_CLAIMS = ["High-protein", "Natural", "Plant-based", "Gut-friendly", "No added sugar", "Organic", "Gluten-free", "Vegan", "Keto-friendly", "Low-calorie"];
+export const PREDEFINED_CLAIMS = [
+  // ── Protein & Performance ──────────────────────────────────────────────
+  "High-protein",        // → Protein
+  "Whey-based",          // → Protein, Recovery
+  "Plant protein",       // → Protein, Natural, Sustainability
+  "Post-workout",        // → Recovery, Protein
+  "Muscle recovery",     // → Recovery
+  "Pre-workout",         // → Energy, Recovery
+
+  // ── Natural & Clean ────────────────────────────────────────────────────
+  "Natural",             // → Natural
+  "No added sugar",      // → Natural, Clean Label
+  "Organic",             // → Natural, Clean Label
+  "Clean label",         // → Clean Label, Natural
+  "No artificial",       // → Clean Label, Natural
+  "Whole grain",         // → Natural, Gut Health
+  "Minimally processed", // → Natural, Clean Label
+
+  // ── Plant-based & Sustainability ───────────────────────────────────────
+  "Plant-based",         // → Natural, Sustainability, Clean Label
+  "Vegan",               // → Natural, Sustainability
+  "Gluten-free",         // → Clean Label
+  "Eco-friendly",        // → Sustainability
+  "Recyclable packaging",// → Sustainability
+  "Locally sourced",     // → Sustainability, Natural
+
+  // ── Gut & Digestive ────────────────────────────────────────────────────
+  "Gut-friendly",        // → Gut Health
+  "Probiotic",           // → Gut Health
+  "Prebiotic",           // → Gut Health
+  "High-fibre",          // → Gut Health, Weight Loss
+  "Digestive support",   // → Gut Health
+
+  // ── Weight & Metabolism ────────────────────────────────────────────────
+  "Low-calorie",         // → Weight Loss
+  "Keto-friendly",       // → Weight Loss, Clean Label
+  "Low-carb",            // → Weight Loss
+  "Fat-burning",         // → Weight Loss, Energy
+  "Metabolism boost",    // → Weight Loss, Energy
+
+  // ── Energy & Mental ────────────────────────────────────────────────────
+  "Energy boost",        // → Energy
+  "Slow-release energy", // → Energy
+  "Caffeine-free",       // → Natural, Energy
+  "Focus",               // → Mental Clarity, Energy
+  "Nootropic",           // → Mental Clarity
+  "Stress relief",       // → Mental Clarity
+
+  // ── Immunity & Wellness ────────────────────────────────────────────────
+  "Immunity support",    // → Immunity
+  "Vitamin-rich",        // → Immunity
+  "Antioxidant",         // → Immunity, Natural
+  "Zinc & Vitamin C",    // → Immunity
+  "Adaptogen",           // → Immunity, Mental Clarity
+
+  // ── Convenience ────────────────────────────────────────────────────────
+  "Ready-to-drink",      // → Convenience
+  "On-the-go",           // → Convenience
+  "No prep",             // → Convenience
+  "Kid-friendly",        // → Convenience
+  "Quick dissolve",      // → Convenience
+
+  // ── Hydration ──────────────────────────────────────────────────────────
+  "Hydration",           // → Hydration
+  "Electrolyte",         // → Hydration, Energy
+  "Coconut water base",  // → Hydration, Natural
+
+  // ── Taste & Indulgence ─────────────────────────────────────────────────
+  "Great taste",         // → Taste
+  "Indulgent",           // → Taste
+  "No chalky texture",   // → Taste
+  "Dessert flavour",     // → Taste
+
+  // ── Price & Value ──────────────────────────────────────────────────────
+  "Affordable",          // → Price Value
+  "Value for money",     // → Price Value
+  "Budget-friendly",     // → Price Value
+];
 
 export const CONSUMER_NEEDS = [
   "Gut Health",
