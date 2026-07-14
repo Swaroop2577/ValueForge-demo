@@ -14,11 +14,11 @@ export default function Navbar({ sidebarOpen, onToggleSidebar, productName }) {
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-amber to-accent-teal flex items-center justify-center">
           <Sparkles size={18} color="#1A1F35" strokeWidth={2.5} />
         </div>
-        <span className="font-semibold text-text-primary text-lg tracking-tight">
+        {/* <span className="font-semibold text-text-primary text-lg tracking-tight">
           Ai Palette
-        </span>
+        </span> */}
       </div>
-      <span className="text-text-secondary">/</span>
+      {/* <span className="text-text-secondary">/</span> */}
       <span className="text-text-primary font-medium">ValueForge</span>
       {productName && (
         <>
